@@ -1,0 +1,13 @@
+inspection:
+  feature_score_tables:
+    - name: C
+      path: outputs/discovery/llama32_1b_instruct_vocab_discovery_layer10resid/C/feature_scores.csv
+    - name: Q
+      path: outputs/discovery/llama32_1b_instruct_vocab_discovery_layer10resid/Q/feature_scores.csv
+  output_score_table:
+    name: output
+    path: outputs/discovery/llama32_1b_instruct_vocab_discovery_layer10resid/output_scores/Q_topk50/output_scores.csv
+  sort_by: output_output_score
+  ascending: false
+  top_n: 50
+  output_dir: outputs/discovery/inspection_layer10resid_Qvocab

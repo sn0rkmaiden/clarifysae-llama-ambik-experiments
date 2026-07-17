@@ -1,0 +1,78 @@
+experiment_name: baseline_clarq_gemma2_9b_llama31_8b
+seed: 42
+
+model:
+  name: google/gemma-2-9b-it
+  backend: hf
+  torch_dtype: float16
+  device_map: auto
+  attn_implementation: null
+  load_in_4bit: true
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+
+generation:
+  max_new_tokens: 96
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+
+prompting:
+  use_chat_template: true
+  system_prompt: ''
+
+steering:
+  enabled: false
+
+provider_model:
+  name: unsloth/Llama-3.1-8B-Instruct
+  backend: hf
+  torch_dtype: float16
+  device_map: auto
+  attn_implementation: null
+  load_in_4bit: true
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+
+provider_generation:
+  max_new_tokens: 128
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+
+provider_prompting:
+  use_chat_template: true
+  system_prompt: ''
+
+judge_model:
+  name: unsloth/Llama-3.1-8B-Instruct
+  backend: hf
+  torch_dtype: float16
+  device_map: auto
+  attn_implementation: null
+
+judge_generation:
+  max_new_tokens: 128
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+
+judge_prompting:
+  use_chat_template: true
+  system_prompt: ''
+
+clarq:
+  dataset_path: data/raw/clarq/English
+  evaluation_set: '0'
+  player_chat_mode: false
+  multi_info_provider_agent: false
+  max_turns_cap: 22
+  write_html_report: true
+  unload_models_before_judge: true
+
+console:
+  show_progress: true
+  suppress_transformers_warnings: true
+
+output:
+  root_dir: outputs

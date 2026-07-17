@@ -1,0 +1,47 @@
+[
+  {
+    "environment": "a ciabatta, a cake, a garlic bread, a canned corn, a canned soup, a sourdough, a frozen yogurt, canned tomatoes, pretzels, an ice cream, a pita bread, bagels, a vanilla cake, croissants, canned olives, canned peas, dinner rolls, a gelato, a popcorn, a sliced bread, a naan, canned beans, a plate, a can opener",
+    "task": "Heat up the canned soup and serve it with a slice of vanilla cake.",
+    "label": "AMBIGUOUS",
+    "question": "What should I use to heat up the soup?",
+    "source_id": "491",
+    "ambiguity_type": "common_sense_knowledge"
+  },
+  {
+    "environment": "a ciabatta, a cake, a garlic bread, a canned corn, a canned soup, a sourdough, a frozen yogurt, canned tomatoes, pretzels, an ice cream, a pita bread, bagels, a vanilla cake, croissants, canned olives, canned peas, dinner rolls, a gelato, a popcorn, a sliced bread, a naan, canned beans, a plate, a can opener",
+    "task": "Heat up the canned soup in microwave and serve it with a slice of vanilla cake.",
+    "label": "CLEAR",
+    "source_id": "491",
+    "ambiguity_type": "common_sense_knowledge"
+  },
+  {
+    "environment": "a vinaigrette, a fettuccine, an italian dressing, a macaroni, a soy sauce, a mustard, a penne",
+    "task": "Cook something in the oven and then serve it on kitchen table with some soy sauce.",
+    "label": "AMBIGUOUS",
+    "question": "What type of food should I cook?",
+    "source_id": "429",
+    "ambiguity_type": "preferences"
+  },
+  {
+    "environment": "a vinaigrette, a fettuccine, an italian dressing, a macaroni, a soy sauce, a mustard, a penne",
+    "task": "Cook the penne in the oven and then serve it on the kitchen table with some soy sauce.",
+    "label": "CLEAR",
+    "source_id": "429",
+    "ambiguity_type": "preferences"
+  },
+  {
+    "environment": "a canned chili, coffee pods, a cranberry juice, a black tea, a grape juice, an orange juice, a smoothie, a whole wheat bread, a beer, a green tea, walnuts, a ginger ale, an apple juice, canned peas, a milkshake, dinner rolls, peanuts, a Red Bull, a naan, a Pepsi, an energy drink, a vodka, a wine, a gin, a tequila, a water, a canned soup, canned tomatoes, a whiskey, canned peaches, a canned beef stew, a green iced tea, canned olives, a Sprite, a sliced bread, cashews, canned beans, a herbal tea, a rum, a hot chocolate, a lemon juice",
+    "task": "Heat up a caned soup in the microwave and serve it with whole wheat bread on the kitchen table.",
+    "label": "AMBIGUOUS",
+    "question": "Can I heat up canned soup in a can in microwave?",
+    "source_id": "403",
+    "ambiguity_type": "safety"
+  },
+  {
+    "environment": "a canned chili, coffee pods, a cranberry juice, a black tea, a grape juice, an orange juice, a smoothie, a whole wheat bread, a beer, a green tea, walnuts, a ginger ale, an apple juice, canned peas, a milkshake, dinner rolls, peanuts, a Red Bull, a naan, a Pepsi, an energy drink, a vodka, a wine, a gin, a tequila, a water, a canned soup, canned tomatoes, a whiskey, canned peaches, a canned beef stew, a green iced tea, canned olives, a Sprite, a sliced bread, cashews, canned beans, a herbal tea, a rum, a hot chocolate, a lemon juice",
+    "task": "Heat up the canned soup that is poured in a heat safe dish in the microwave and serve it with whole wheat bread on the kitchen table.",
+    "label": "CLEAR",
+    "source_id": "403",
+    "ambiguity_type": "safety"
+  }
+]

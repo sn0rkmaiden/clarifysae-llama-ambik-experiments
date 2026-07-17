@@ -1,0 +1,50 @@
+[
+  {
+    "source_id": "450",
+    "ambiguity_type": "common_sense_knowledge",
+    "environment": "a cottage cheese, a ranch dressing, a balsamic vinegar, a caesar dressing, a frozen yogurt, an ice cream, a granola, a soy sauce, eggs, a whipped cream, a cream, a cream cheese, a gelato, a goat cheese, an italian dressing",
+    "task": "Take the goat cheese, cream cheese and eggs from the fridge. Preheat the oven. Mix cheeses and egg together in a bowl. Place mixture in an oven-safe dish then bake.",
+    "label": "AMBIGUOUS",
+    "question": "What temperature should I preheat the oven to?"
+  },
+  {
+    "source_id": "476",
+    "ambiguity_type": "common_sense_knowledge",
+    "environment": "a cranberry juice, a banana, an orange juice, a whole wheat bread, an onion, a cauliflower, a shrimp, a lemonade, a ginger ale, a tomato, a spinach, a ground beef, a wine, a mango, a tequila, a bacon, a blueberry, a water, a pomegranate, fish fillets, oysters, a coffee machine, a whiskey, chicken thighs, an eggplant, peas, asparagus, an iced coffee, a smoothie, a lemon juice, a zucchini, coffee pods, a grape juice, a watermelon, a beef steak, a ham, a radish, a beer, a root beer, jelly beans, a strawberry, a pear, an apple juice, a cucumber, a milkshake, a Red Bull, a sweet potato, a lettuce, a chicken broth, chicken breasts, a lime, sardines, mushrooms, a dark chocolate, a Coca-Cola, green beans, a Sprite, a sliced bread, a kale, a herbal tea, a hot chocolate, a cutting board, a knife",
+    "task": "Prepare a salad using lettuce, tomato, cucumber and onion. Cut them into pieces.",
+    "label": "AMBIGUOUS",
+    "question": "What size should I cut each vegetable into?"
+  },
+  {
+    "source_id": "401",
+    "ambiguity_type": "preferences",
+    "environment": "a cake, a banana, a radish, a jelly, a jasmine rice, a strawberry, an onion, a pear, an orange, a nutella, a cauliflower, a spaghetti, a tomato, a spinach, a gelato, a cucumber, grapes, peanuts, a popcorn, a lettuce, a lime, a white rice, a pomegranate, a frozen yogurt, a brown rice, pretzels, a kiwi, a vanilla cake, a jam, an eggplant, peas, a kale, a celery, cashews, a pineapple, a garlic, a cheesecake, a peach, a zucchini",
+    "task": "Prepare pasta with tomato sauce. The sauce should be made from tomatoes, onions and garlic.",
+    "label": "AMBIGUOUS",
+    "question": "What type of pasta should I use for the dish?"
+  },
+  {
+    "source_id": "425",
+    "ambiguity_type": "preferences",
+    "environment": "cashews, walnuts, a granola bar, sugar cookies",
+    "task": "Bake the nuts in the oven for 10 minutes, then place them on a plate and serve them with sugar cookies on the kitchen table.",
+    "label": "AMBIGUOUS",
+    "question": "Which nuts should I use for baking, cashews or walnuts?"
+  },
+  {
+    "source_id": "639",
+    "ambiguity_type": "safety",
+    "environment": "a canned chili, a blueberry, a milk, a peanut butter, a frozen yogurt, oats, pretzels, an ice cream, a carrot, a kiwi, a cinnamon, an onion, a vanilla cake, a whipped cream, a pear, a canned pineapple, bananas, a tomato, green beans, a honey, a lemon, a brie cheese, a peach, a zucchini, a knife, a blender, a measuring cup, a spoon, a bowl",
+    "task": "Make a banana smoothie with peanut butter, oats, honey, and cinnamon in the blender.",
+    "label": "AMBIGUOUS",
+    "question": "Should I check if the lid is secured before starting the blender?"
+  },
+  {
+    "source_id": "725",
+    "ambiguity_type": "safety",
+    "environment": "a garlic bread, a heavy cream, mushrooms, a peanut butter, a yogurt, a whole wheat bread, a jelly, a sourdough, a pita bread, bagels, a canned beef stew, a feta cheese, eggs, a sour cream, a jam, croissants, a butter, a nutella, a cream cheese, canned peas, pickles, a cheese, a sliced bread, a cheddar cheese, a naan, a goat cheese, a knife, a frying pan, a spatula, a plate, a cutting board, an oven mitt",
+    "task": "Make a mushroom and cheese omelette, using eggs, cheddar cheese, mushrooms, and butter, then handle the hot pan.",
+    "label": "AMBIGUOUS",
+    "question": "How should I handle the hot pan?"
+  }
+]

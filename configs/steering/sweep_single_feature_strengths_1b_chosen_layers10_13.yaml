@@ -1,0 +1,59 @@
+experiment_name: llama32_1b_instruct_chosen_single_feature_strength_sweep_layers10_13
+base_config: configs/1b_instruct_sweep_base.yaml
+
+sweep:
+  mode: single_feature_strength
+  strengths: [-1.0, -3.0, -5.0, -10.0, 1.0, 3.0, 5.0, 10.0]
+
+  groups:
+    - vocab: C
+      hookpoint: model.layers.10
+      module_path: model.layers.10
+      features: [353, 5285, 6662, 4078, 4146]
+
+    - vocab: Q
+      hookpoint: model.layers.10
+      module_path: model.layers.10
+      features: [5981, 353, 6573, 5285, 6662]
+
+    - vocab: C
+      hookpoint: model.layers.11
+      module_path: model.layers.11
+      features: [199, 2192, 3868]
+
+    - vocab: Q
+      hookpoint: model.layers.11
+      module_path: model.layers.11
+      features: [5981, 6661, 2192, 4360, 83, 472]
+
+    - vocab: C
+      hookpoint: model.layers.12
+      module_path: model.layers.12
+      features: [3979, 6230, 5965]
+
+    - vocab: Q
+      hookpoint: model.layers.12
+      module_path: model.layers.12
+      features: [1249, 6230, 3404, 5965, 1494, 4293, 6529]
+
+    - vocab: C
+      hookpoint: model.layers.13
+      module_path: model.layers.13
+      features: [5533, 2472, 5816]
+
+    - vocab: Q
+      hookpoint: model.layers.13
+      module_path: model.layers.13
+      features: [4930, 4535, 2472, 1088, 5816, 1583, 4506]
+
+  storage:
+    layout: flat
+    keep_generated_configs: false
+    keep_predictions: false
+    keep_predictions_full: false
+    keep_results: true
+    keep_results_full: false
+    keep_example_metrics: false
+    keep_aggregate_metrics: false
+    keep_category_metrics: false
+    cleanup_tmp_run_dirs: true

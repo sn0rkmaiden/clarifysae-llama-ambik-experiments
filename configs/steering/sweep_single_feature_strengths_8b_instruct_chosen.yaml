@@ -1,0 +1,43 @@
+experiment_name: llama31_8b_instruct_extra
+base_config: configs/8b_instruct_sweep_base.yaml
+
+sweep:
+  mode: single_feature_strength
+  strengths: [-5.0, -10.0, 15.0, 20.0]
+
+  groups:
+    - vocab: C
+      hookpoint: model.layers.23
+      module_path: model.layers.23
+      sae_file: resid_post_layer_23/trainer_1
+      features: [124185, 100933, 75436, 12013, 16440]
+
+    - vocab: Q
+      hookpoint: model.layers.23
+      module_path: model.layers.23
+      sae_file: resid_post_layer_23/trainer_1
+      features: [124185, 73417, 60463, 63754, 52042, 93739, 80944, 16440]
+
+    - vocab: C
+      hookpoint: model.layers.27
+      module_path: model.layers.27
+      sae_file: resid_post_layer_27/trainer_1
+      features: [21268, 55178, 88738, 8258, 107311, 88643]
+
+    - vocab: Q
+      hookpoint: model.layers.27
+      module_path: model.layers.27
+      sae_file: resid_post_layer_27/trainer_1
+      features: [62124, 21268, 46434, 121420, 114768, 80944, 8258, 116805, 85233]
+
+  storage:
+    layout: flat
+    keep_generated_configs: false
+    keep_predictions: false
+    keep_predictions_full: false
+    keep_results: true
+    keep_results_full: false
+    keep_example_metrics: false
+    keep_aggregate_metrics: false
+    keep_category_metrics: false
+    cleanup_tmp_run_dirs: true

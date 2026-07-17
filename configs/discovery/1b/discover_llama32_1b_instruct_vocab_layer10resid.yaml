@@ -1,0 +1,44 @@
+experiment_name: llama32_1b_instruct_vocab_discovery_layer10resid
+seed: 42
+
+model:
+  name: unsloth/Llama-3.2-1B-Instruct
+  backend: hf
+  torch_dtype: bfloat16
+  device_map: auto
+
+discovery:
+  loader: sparsify
+  sae_repo: apart/llama3.2_1b_instruct_saes_vader
+  hookpoint: model.layers.10
+  module_path: model.layers.10
+
+  vocab_paths:
+    C: data/vocabs/clarifying_vocab.json
+    Q: data/vocabs/question_vocab.json
+
+  dataset:
+    source: parquet
+    path: data/processed/lmsys_llama32_1b_tokenized/train.parquet
+    text_column: tokens
+    n_texts: 4096
+
+  tokenization:
+    max_length: 256
+    stride: 256
+    add_special_tokens: false
+    kind: pretokenized
+
+  batching:
+    token_batch_size: 8
+
+  scoring:
+    alpha: 1.0
+    epsilon: 1.0e-12
+    expand_range: [0, 0]
+    ignore_special_tokens: true
+    ignore_token_ids: []
+
+  output:
+    root_dir: outputs/discovery
+    top_k: 100

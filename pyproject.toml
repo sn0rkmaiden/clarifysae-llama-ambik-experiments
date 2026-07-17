@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clarifysae-llama-ambik"
+version = "0.1.0"
+description = "Llama-3.2-1B + sparsify SAE steering on AmbiK"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "pyyaml>=6.0",
+  "tqdm>=4.66",
+  "torch>=2.2",
+  "transformers>=4.45",
+  "accelerate>=0.33",
+  "safetensors>=0.4",
+  "eai-sparsify",
+  "datasets>=2.20",
+  "sentence-transformers>=3.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

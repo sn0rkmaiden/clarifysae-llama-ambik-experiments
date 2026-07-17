@@ -1,0 +1,28 @@
+experiment_name: gemma2_9b_single_feature_strength_sweep_clarq_trueQvocab
+base_config: configs/clarq/gemma2_9b_clarq_sweep_base.yaml
+
+sweep:
+  mode: single_feature_strength
+  strengths: [-10.0, -5.0, -3.0, -1.0, 1.0, 3.0, 5.0, 10.0]
+  groups:
+    # - vocab: C
+    #   hookpoint: blocks.20.hook_resid_post
+    #   module_path: model.layers.20
+    #   sae_id: layer_20/width_16k/average_l0_91
+    #   features: [344, 383, 565, 591, 688, 771]
+    - vocab: Q
+      hookpoint: blocks.20.hook_resid_post
+      module_path: model.layers.20
+      sae_id: layer_20/width_16k/average_l0_91
+      features: [229, 480, 748, 711, 318, 493]
+  storage:
+    layout: flat
+    keep_generated_configs: false
+    keep_results: true
+    keep_example_metrics: true
+    keep_aggregate_metrics: true
+    keep_clarq_metrics: true
+    keep_clarq_summary: true
+    keep_clarq_report: true
+    keep_clarq_feature_dashboards: true
+    cleanup_tmp_run_dirs: true

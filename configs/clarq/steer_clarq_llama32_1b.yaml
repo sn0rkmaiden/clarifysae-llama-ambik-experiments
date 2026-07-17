@@ -1,0 +1,87 @@
+experiment_name: steer_clarq_llama32_1b
+seed: 42
+
+model:
+  name: unsloth/Llama-3.2-1B-Instruct
+  backend: hf
+  torch_dtype: bfloat16
+  device_map: auto
+  attn_implementation: null
+
+generation:
+  max_new_tokens: 96
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+
+prompting:
+  use_chat_template: true
+  system_prompt: ''
+
+steering:
+  enabled: true
+  method: custom
+  loader: sparsify
+  sae_repo: apart/llama3.2_1b_instruct_saes_vader
+  # placeholders; sweep.py will overwrite these
+  hookpoint: model.layers.10
+  module_path: model.layers.10
+  feature_indices: [0]
+  strength: 1.0
+  mode: additive
+  apply_to: all_positions
+  steer_generated_tokens_only: true
+  runtime:
+    normalize_reconstruction: true
+    preserve_unsteered_residual: true
+    clamp_latents: null
+    log_feature_acts: false
+
+provider_model:
+  name: unsloth/Llama-3.1-8B-Instruct
+  backend: hf
+  torch_dtype: bfloat16
+  device_map: auto
+  attn_implementation: null
+
+provider_generation:
+  max_new_tokens: 128
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+
+provider_prompting:
+  use_chat_template: true
+  system_prompt: ''
+
+judge_model:
+  name: unsloth/Llama-3.1-8B-Instruct
+  backend: hf
+  torch_dtype: bfloat16
+  device_map: auto
+  attn_implementation: null
+
+judge_generation:
+  max_new_tokens: 128
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+
+judge_prompting:
+  use_chat_template: true
+  system_prompt: ''
+
+clarq:
+  dataset_path: data/raw/clarq/English
+  evaluation_set: '0'
+  player_chat_mode: true
+  multi_info_provider_agent: false
+  max_turns_cap: 22
+  write_html_report: true
+
+console:
+  show_progress: true
+  suppress_transformers_warnings: true
+
+output:
+  root_dir: outputs

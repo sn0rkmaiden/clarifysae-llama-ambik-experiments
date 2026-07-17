@@ -1,0 +1,86 @@
+experiment_name: steer_clarq_llama31_8b
+seed: 42
+
+model:
+  name: unsloth/Llama-3.1-8B-Instruct
+  backend: hf
+  torch_dtype: bfloat16
+  device_map: auto
+  attn_implementation: null
+
+generation:
+  max_new_tokens: 96
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+
+prompting:
+  use_chat_template: true
+  system_prompt: ''
+
+steering:
+  enabled: true
+  sae_repo: andyrdt/saes-llama-3.1-8b-instruct
+  loader: dictionary_learning
+  hookpoint: model.layers.27
+  module_path: model.layers.27
+  sae_file: resid_post_layer_27/trainer_1
+  feature_indices: [114768]
+  strength: 5.0
+  mode: additive
+  apply_to: all_positions
+  steer_generated_tokens_only: false
+  runtime:
+    normalize_reconstruction: false
+    preserve_unsteered_residual: true
+    clamp_latents: null
+    log_feature_acts: false
+
+provider_model:
+  name: unsloth/Llama-3.1-8B-Instruct
+  backend: hf
+  torch_dtype: bfloat16
+  device_map: auto
+  attn_implementation: null
+
+provider_generation:
+  max_new_tokens: 128
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+
+provider_prompting:
+  use_chat_template: true
+  system_prompt: ''
+
+judge_model:
+  name: unsloth/Llama-3.1-8B-Instruct
+  backend: hf
+  torch_dtype: bfloat16
+  device_map: auto
+  attn_implementation: null
+
+judge_generation:
+  max_new_tokens: 128
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+
+judge_prompting:
+  use_chat_template: true
+  system_prompt: ''
+
+clarq:
+  dataset_path: data/raw/clarq/English
+  evaluation_set: '0'
+  player_chat_mode: true
+  multi_info_provider_agent: false
+  max_turns_cap: 22
+  write_html_report: true
+
+console:
+  show_progress: true
+  suppress_transformers_warnings: true
+
+output:
+  root_dir: outputs

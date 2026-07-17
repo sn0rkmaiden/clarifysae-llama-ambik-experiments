@@ -1,0 +1,39 @@
+experiment_name: baseline_llama31_8b_instruct_100
+seed: 42
+
+model:
+  name: unsloth/Llama-3.1-8B-Instruct
+  backend: hf
+  torch_dtype: bfloat16
+  device_map: auto
+  attn_implementation: null
+
+generation:
+  max_new_tokens: 96
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+
+prompting:
+  template: no_help
+  use_chat_template: auto
+
+steering:
+  enabled: false
+
+batching:
+  batch_size: 1
+
+dataset:
+  path: data/raw/ambik/ambik_calib_100.csv
+  limit: null
+
+output:
+  root_dir: outputs
+
+evaluation:
+  protocol: separated
+  max_questions: 3
+  embed_threshold: 0.75
+  enable_nli: false
+  brevity_max: 1

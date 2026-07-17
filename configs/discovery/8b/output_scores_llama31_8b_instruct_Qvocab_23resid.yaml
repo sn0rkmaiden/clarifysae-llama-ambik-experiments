@@ -1,0 +1,40 @@
+experiment_name: llama31_8b_instruct_vocab_discovery_layer23resid
+seed: 42
+
+model:
+  name: unsloth/Llama-3.1-8B-Instruct
+  backend: hf
+  torch_dtype: bfloat16
+  device_map: auto
+
+output_scoring:
+  name: Q_topk50
+  root_dir: outputs/discovery
+  feature_scores_path: outputs/discovery/llama31_8b_instruct_vocab_discovery_layer23resid/Q/feature_scores.pt
+  feature_score_key: scores
+  top_k_features: 50
+
+  loader: dictionary_learning
+  sae_repo: andyrdt/saes-llama-3.1-8b-instruct
+  sae_file: resid_post_layer_23/trainer_1
+  hookpoint: model.layers.23
+  module_path: model.layers.23
+
+  prompt: "From my experience,"
+  amp_factor: 10.0
+  top_k_tokens: 20
+
+  tokenization:
+    max_length: 256
+    stride: 256
+    add_special_tokens: false
+    kind: pretokenized
+
+  batching:
+    token_batch_size: 4
+
+  amax_dataset:
+    source: parquet
+    path: data/processed/lmsys_llama31_8b_tokenized/train.parquet
+    text_column: tokens
+    n_texts: 4096

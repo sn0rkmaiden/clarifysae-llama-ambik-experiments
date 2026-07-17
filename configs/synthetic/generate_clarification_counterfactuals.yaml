@@ -1,0 +1,45 @@
+experiment_name: synthetic_clarification_counterfactuals
+seed: 42
+
+model:
+  # Use the same model whose representations will be analyzed for the closest
+  # analogue to Anthropic's self-generated concept corpus.
+  name: unsloth/Llama-3.2-1B-Instruct
+  torch_dtype: float16
+  device_map: auto
+
+generation:
+  max_new_tokens: 512
+  do_sample: true
+  temperature: 0.8
+  top_p: 0.95
+
+prompting:
+  use_chat_template: auto
+  system_prompt: You create precise JSON research stimuli and obey all schema constraints.
+
+synthetic_corpus:
+  output_path: outputs/synthetic/clarification_counterfactuals.jsonl
+  scenarios_per_topic: 12
+  max_retries: 2
+  topics:
+    - cooking
+    - household organization
+    - travel planning
+    - office work
+    - shopping
+    - personal scheduling
+    - software configuration
+    - data analysis
+    - robot manipulation
+    - healthcare administration
+    - education
+    - finance
+    - creative writing
+    - event planning
+    - customer support
+    - navigation
+    - safety-critical maintenance
+    - accessibility
+    - collaboration
+    - research

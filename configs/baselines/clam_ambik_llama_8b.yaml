@@ -1,0 +1,48 @@
+experiment_name: clam_ambik_llama31_8b_zero_shot_qgen
+seed: 42
+model:
+  name: unsloth/Llama-3.1-8B-Instruct
+  backend: hf
+  torch_dtype: float16
+  device_map: auto
+  attn_implementation: null
+  load_in_4bit: true
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+generation:
+  max_new_tokens: 64
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+prompting:
+  use_chat_template: true
+  system_prompt: ''
+  truncation_side: left
+steering:
+  enabled: false
+batching:
+  batch_size: 1
+dataset:
+  path: data/raw/ambik/ambik_calib_100.csv
+  limit: null
+  include_unambiguous_pairs: true
+clam:
+  candidate_text:
+    ambiguous: 'True'
+    clear: 'False'
+  decision_threshold: null
+  threshold_calibration:
+    path: data/raw/ambik/ambik_clam_threshold_50.csv
+    limit: null
+    objective: balanced_accuracy
+  reuse_question_outputs_from: null
+  classification_demonstrations_path: data/prompts/clam_classification_demos.json
+  question_generation_mode: zero_shot
+  question_demonstrations_path: null
+  reuse_classification_from: outputs/clam_ambik_llama31_8b_diverse_qdemos/predictions/results.json
+output:
+  root_dir: outputs
+evaluation:
+  embed_threshold: 0.75
+  enable_nli: false
+  brevity_max: 1

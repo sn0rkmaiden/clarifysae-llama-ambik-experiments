@@ -1,0 +1,43 @@
+experiment_name: extract_clarification_vectors
+seed: 42
+
+model:
+  name: unsloth/Llama-3.2-1B-Instruct
+  torch_dtype: float16
+  device_map: auto
+
+generation:
+  max_new_tokens: 1
+  do_sample: false
+
+prompting:
+  use_chat_template: false
+
+concept_discovery:
+  dataset_path: outputs/synthetic/clarification_counterfactuals.jsonl
+  output_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
+  concepts: [ambiguity_state, ask_policy, targeted_question, restraint_on_clear]
+  hookpoints:
+    - model.layers.8
+    - model.layers.10
+    - model.layers.12
+    - model.layers.14
+  # Optional per-hookpoint override, useful for non-Llama architectures.
+  module_paths: {}
+  batch_size: 8
+  max_length: 512
+
+  # "recommended" uses last-token pooling for ambiguity_state and assistant-span
+  # pooling for output-behavior concepts. To reproduce Anthropic's story pooling
+  # more literally, use pooling: mean_after_token and mean_after_token: 50.
+  pooling: recommended
+  mean_after_token: 50
+  methods: [paired_difference, difference_in_means, ridge_probe]
+  pair_id_field: pair_id
+  ridge_l2: 1.0
+
+  # Add rows with concept: neutral to enable Anthropic-style nuisance-PC removal.
+  neutral_pca:
+    concept: neutral
+    variance_fraction: 0.5
+    max_components: 64

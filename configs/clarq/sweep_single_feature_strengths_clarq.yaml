@@ -1,0 +1,20 @@
+experiment_name: clarq_llama31_8b_single_feature_strength_sweep
+base_config: configs/clarq/8b_instruct_clarq_sweep_base.yaml
+
+sweep:
+  mode: single_feature_strength
+  strengths: [-10.0, -5.0, -3.0, 1.0, 3.0, 5.0, 10.0]
+  groups:
+    - vocab: Q
+      hookpoint: model.layers.27
+      module_path: model.layers.27
+      sae_file: resid_post_layer_27/trainer_1
+      features: [114768]
+
+  storage:
+    layout: flat
+    keep_generated_configs: true
+    keep_results: true
+    keep_example_metrics: false
+    keep_aggregate_metrics: true
+    cleanup_tmp_run_dirs: true

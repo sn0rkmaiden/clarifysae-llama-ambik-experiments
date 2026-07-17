@@ -1,0 +1,17 @@
+experiment_name: project_dense_clarification_vector_to_sae
+
+sae_projection:
+  vector_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
+  vector_key: ask_policy__paired_difference__model_layers_10
+  loader: sparsify
+  sae_repo: apart/llama3.2_1b_instruct_saes_vader
+  hookpoint: model.layers.10
+  module_path: model.layers.10
+  sae_file: null
+  sae_id: null
+  device: cpu
+  dtype: float32
+  candidate_k: 256
+  selected_k: 16
+  normalize_weights: true
+  output_dir: outputs/sae_projection/ask_policy_layer10
