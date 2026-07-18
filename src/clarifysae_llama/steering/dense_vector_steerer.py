@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import torch
 
@@ -25,13 +25,15 @@ class DenseVectorConfig:
     apply_to: str = "last_position"
     steer_generated_tokens_only: bool = True
     normalize_vector: bool = True
-    scale_mode: str = "absolute"  # absolute | residual_norm_fraction
+    # absolute | residual_norm_fraction | recorded_residual_norm_fraction
+    scale_mode: str = "absolute"
     norm_cap: float | None = None
     gate_enabled: bool = False
     gate_vector_path: str | None = None
     gate_vector_key: str | None = None
     gate_threshold: float = 0.0
-    gate_temperature: float = 1.0
+    # None means use the score scale stored in the vector bundle.
+    gate_temperature: float | None = None
     gate_mode: str = "hard"  # hard | sigmoid | positive_score
 
 
@@ -73,6 +75,7 @@ class DenseVectorSteerer:
         self.vector = steer_record["vector"].detach().to(dtype=torch.float32).flatten()
         if config.normalize_vector:
             self.vector = self.vector / self.vector.norm().clamp_min(1e-8)
+        self.recorded_residual_norm = float(steer_record.get("average_residual_norm", 0.0))
 
         if config.gate_enabled:
             gate_path = config.gate_vector_path or config.vector_path
@@ -80,9 +83,20 @@ class DenseVectorSteerer:
             gate_record = _load_vector_record(gate_path, gate_key)
             self.gate_vector = gate_record["vector"].detach().to(dtype=torch.float32).flatten()
             self.gate_vector = self.gate_vector / self.gate_vector.norm().clamp_min(1e-8)
-            self.gate_bias = float(gate_record.get("probe_bias", gate_record.get("bias", 0.0)))
-            stored_temperature = float(gate_record.get("probe_temperature", gate_record.get("score_std", 1.0)))
-            self.gate_temperature = float(config.gate_temperature or stored_temperature or 1.0)
+            self.gate_bias = float(
+                gate_record.get("probe_bias", gate_record.get("score_bias", gate_record.get("bias", 0.0)))
+            )
+            stored_temperature = float(
+                gate_record.get(
+                    "probe_temperature",
+                    gate_record.get("score_temperature", gate_record.get("score_std", 1.0)),
+                )
+            )
+            self.gate_temperature = (
+                stored_temperature if config.gate_temperature is None else float(config.gate_temperature)
+            )
+            if self.gate_temperature <= 0:
+                raise ValueError("gate_temperature must be positive")
         else:
             self.gate_vector = None
             self.gate_bias = 0.0
@@ -111,19 +125,22 @@ class DenseVectorSteerer:
         else:
             raise ValueError(f"Unsupported apply_to mode: {self.config.apply_to}")
         if self.config.steer_generated_tokens_only and seq_len > 1:
+            # During prefill this selects the final prompt position, which is the
+            # state that produces the first generated token. Subsequent cached
+            # decoding calls contain one token and are selected as well.
             generated_mask = torch.zeros_like(mask)
             generated_mask[:, -1] = True
             mask &= generated_mask
         return mask
 
     def _compute_gate_weights(self, hidden: torch.Tensor) -> torch.Tensor:
-        batch_size, seq_len, d_model = hidden.shape
+        batch_size, _seq_len, d_model = hidden.shape
         if not self.config.gate_enabled:
             return torch.ones(batch_size, device=hidden.device, dtype=hidden.dtype)
 
-        # The prefill's final prompt position is the decision state. Cache it so
-        # generation-time calls use the same per-example ambiguity decision.
-        if seq_len > 1 or self._cached_gate_weights is None:
+        # Compute exactly once per reset. Recomputing whenever seq_len > 1 makes
+        # no-cache generation silently change the gate after every token.
+        if self._cached_gate_weights is None:
             if self.gate_vector is None or self.gate_vector.numel() != d_model:
                 raise ValueError(
                     f"Gate vector dimension {0 if self.gate_vector is None else self.gate_vector.numel()} "
@@ -154,8 +171,34 @@ class DenseVectorSteerer:
             "Beam expansion must be an integer multiple of the prefill batch."
         )
 
+    def _scales(self, base: torch.Tensor) -> torch.Tensor:
+        mode = self.config.scale_mode.strip().lower().replace("-", "_")
+        if mode == "absolute":
+            return torch.full(
+                (base.shape[0], 1),
+                float(self.config.strength),
+                device=base.device,
+                dtype=base.dtype,
+            )
+        if mode == "residual_norm_fraction":
+            return float(self.config.strength) * base.norm(dim=-1, keepdim=True)
+        if mode == "recorded_residual_norm_fraction":
+            if self.recorded_residual_norm <= 0:
+                raise ValueError(
+                    "recorded_residual_norm_fraction requires average_residual_norm "
+                    "in the vector record; re-run extraction with the updated code"
+                )
+            return torch.full(
+                (base.shape[0], 1),
+                float(self.config.strength) * self.recorded_residual_norm,
+                device=base.device,
+                dtype=base.dtype,
+            )
+        raise ValueError(f"Unsupported scale_mode: {self.config.scale_mode}")
+
     @torch.inference_mode()
     def _hook_fn(self, module, inputs, output):
+        del module, inputs
         hidden = output[0] if isinstance(output, tuple) else output
         if hidden is None:
             return output
@@ -178,16 +221,7 @@ class DenseVectorSteerer:
         seq_idx = positions[:, 1]
         base = updated[batch_idx, seq_idx, :]
 
-        scale_mode = self.config.scale_mode.strip().lower().replace("-", "_")
-        if scale_mode == "absolute":
-            scales = torch.full(
-                (base.shape[0], 1), float(self.config.strength), device=hidden.device, dtype=hidden.dtype
-            )
-        elif scale_mode == "residual_norm_fraction":
-            scales = float(self.config.strength) * base.norm(dim=-1, keepdim=True)
-        else:
-            raise ValueError(f"Unsupported scale_mode: {self.config.scale_mode}")
-        scales = scales * gate_weights[batch_idx].unsqueeze(-1)
+        scales = self._scales(base) * gate_weights[batch_idx].unsqueeze(-1)
         delta = scales * vector.unsqueeze(0)
 
         if self.config.norm_cap is not None:
@@ -199,3 +233,38 @@ class DenseVectorSteerer:
         if isinstance(output, tuple):
             return (updated,) + output[1:]
         return updated
+
+
+class MultiLayerDenseVectorSteerer:
+    """Attach one dense vector per layer, as in multi-layer activation steering.
+
+    Each child has its own layer-specific vector. For the cleanest Anthropic-style
+    replication use unconditional children. Probe-gated experiments are usually
+    easier to interpret with a single decision layer, because independently
+    gating every layer can yield inconsistent decisions.
+    """
+
+    def __init__(
+        self,
+        model,
+        model_device: torch.device,
+        dtype: torch.dtype,
+        configs: Iterable[DenseVectorConfig],
+    ):
+        self.steerers = [
+            DenseVectorSteerer(model, model_device, dtype, config) for config in configs
+        ]
+        if not self.steerers:
+            raise ValueError("MultiLayerDenseVectorSteerer requires at least one layer config")
+
+    def attach(self) -> None:
+        for steerer in self.steerers:
+            steerer.attach()
+
+    def detach(self) -> None:
+        for steerer in reversed(self.steerers):
+            steerer.detach()
+
+    def reset(self) -> None:
+        for steerer in self.steerers:
+            steerer.reset()

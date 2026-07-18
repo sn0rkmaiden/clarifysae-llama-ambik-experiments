@@ -30,8 +30,12 @@ def _bundle(tmp_path: Path) -> str:
     path = tmp_path / "vectors.pt"
     torch.save({
         "vectors": {
-            "steer": {"vector": torch.tensor([1.0, 0.0])},
-            "gate": {"vector": torch.tensor([0.0, 1.0]), "probe_bias": 0.0},
+            "steer": {"vector": torch.tensor([1.0, 0.0]), "average_residual_norm": 10.0},
+            "gate": {
+                "vector": torch.tensor([0.0, 1.0]),
+                "probe_bias": 0.0,
+                "probe_temperature": 2.5,
+            },
         }
     }, path)
     return str(path)
@@ -77,3 +81,50 @@ def test_hard_gate_blocks_clear_example(tmp_path):
         steerer.detach()
     assert torch.allclose(y[0, -1], torch.tensor([1.0, 1.0]))
     assert torch.allclose(y[1, -1], torch.tensor([0.0, -1.0]))
+
+
+def test_gate_is_cached_even_for_no_cache_full_sequence_calls(tmp_path):
+    model = DummyModel()
+    path = _bundle(tmp_path)
+    steerer = DenseVectorSteerer(
+        model, torch.device("cpu"), torch.float32,
+        DenseVectorConfig(
+            vector_path=path, vector_key="steer", hookpoint="model.layers.0",
+            strength=1.0, apply_to="last_position", steer_generated_tokens_only=False,
+            gate_enabled=True, gate_vector_key="gate", gate_mode="hard",
+        ),
+    )
+    steerer.attach()
+    try:
+        first = model(torch.tensor([[[0.0, 0.0], [0.0, 1.0]]]))
+        # A later full-sequence call has a negative last token. The original
+        # positive prompt decision must remain cached.
+        second = model(torch.tensor([[[0.0, 0.0], [0.0, -1.0], [0.0, -2.0]]]))
+    finally:
+        steerer.detach()
+    assert torch.allclose(first[0, -1], torch.tensor([1.0, 1.0]))
+    assert torch.allclose(second[0, -1], torch.tensor([1.0, -2.0]))
+
+
+def test_stored_gate_temperature_and_recorded_norm_scaling(tmp_path):
+    model = DummyModel()
+    path = _bundle(tmp_path)
+    steerer = DenseVectorSteerer(
+        model, torch.device("cpu"), torch.float32,
+        DenseVectorConfig(
+            vector_path=path, vector_key="steer", hookpoint="model.layers.0",
+            strength=0.2, scale_mode="recorded_residual_norm_fraction",
+            apply_to="last_position", steer_generated_tokens_only=False,
+            gate_enabled=True, gate_vector_key="gate", gate_mode="sigmoid",
+            gate_temperature=None,
+        ),
+    )
+    assert steerer.gate_temperature == 2.5
+    x = torch.tensor([[[0.0, 0.0], [0.0, 0.0]]])
+    steerer.attach()
+    try:
+        y = model(x)
+    finally:
+        steerer.detach()
+    # sigmoid(0)=0.5; strength * recorded norm = 0.2 * 10 = 2.
+    assert torch.allclose(y[0, -1], torch.tensor([1.0, 0.0]))

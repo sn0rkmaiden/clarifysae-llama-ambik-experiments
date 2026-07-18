@@ -1,0 +1,15 @@
+experiment_name: ambik_dense_vector_probe_gated_strength_sweep
+base_config: configs/steering/dense_vector_probe_gated.yaml
+
+sweep:
+  parameter: steering.strength
+  values: [-0.10, -0.05, -0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03, 0.05, 0.10]
+  storage:
+    layout: flat
+    keep_generated_configs: true
+    keep_predictions: true
+    keep_results: true
+    keep_example_metrics: true
+    keep_aggregate_metrics: true
+    keep_category_metrics: true
+    cleanup_tmp_run_dirs: true

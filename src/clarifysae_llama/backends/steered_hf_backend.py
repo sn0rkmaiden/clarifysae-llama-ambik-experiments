@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from clarifysae_llama.backends.hf_backend import HFCausalBackend
 from clarifysae_llama.steering.config import SteeringConfig
-from clarifysae_llama.steering.dense_vector_steerer import DenseVectorConfig, DenseVectorSteerer
+from clarifysae_llama.steering.dense_vector_steerer import (
+    DenseVectorConfig,
+    DenseVectorSteerer,
+    MultiLayerDenseVectorSteerer,
+)
 from clarifysae_llama.steering.sparsify_steerer import SparsifySteerer
 
 
@@ -17,6 +21,7 @@ class SteeredHFCausalBackend(HFCausalBackend):
 
         if method in {"dense", "dense_vector", "concept_vector"}:
             gate_cfg = steering_cfg.get("gate", {})
+            temperature = gate_cfg.get("temperature")
             self.steering = DenseVectorSteerer(
                 model=self.model,
                 model_device=model_device,
@@ -36,9 +41,44 @@ class SteeredHFCausalBackend(HFCausalBackend):
                     gate_vector_path=gate_cfg.get("vector_path"),
                     gate_vector_key=gate_cfg.get("vector_key"),
                     gate_threshold=float(gate_cfg.get("threshold", 0.0)),
-                    gate_temperature=float(gate_cfg.get("temperature", 1.0)),
+                    gate_temperature=None if temperature is None else float(temperature),
                     gate_mode=gate_cfg.get("mode", "hard"),
                 ),
+            )
+        elif method in {"dense_vector_multi", "dense_multi", "concept_vector_multi"}:
+            common_gate = steering_cfg.get("gate", {})
+            layer_configs = []
+            for layer in steering_cfg.get("layers", []):
+                gate_cfg = layer.get("gate", common_gate)
+                temperature = gate_cfg.get("temperature")
+                layer_configs.append(DenseVectorConfig(
+                    vector_path=layer.get("vector_path", steering_cfg["vector_path"]),
+                    vector_key=layer["vector_key"],
+                    hookpoint=layer["hookpoint"],
+                    module_path=layer.get("module_path"),
+                    strength=float(layer.get("strength", steering_cfg["strength"])),
+                    apply_to=layer.get("apply_to", steering_cfg.get("apply_to", "last_position")),
+                    steer_generated_tokens_only=bool(layer.get(
+                        "steer_generated_tokens_only",
+                        steering_cfg.get("steer_generated_tokens_only", True),
+                    )),
+                    normalize_vector=bool(layer.get(
+                        "normalize_vector", steering_cfg.get("normalize_vector", True)
+                    )),
+                    scale_mode=layer.get("scale_mode", steering_cfg.get("scale_mode", "absolute")),
+                    norm_cap=layer.get("norm_cap", steering_cfg.get("norm_cap")),
+                    gate_enabled=bool(gate_cfg.get("enabled", False)),
+                    gate_vector_path=gate_cfg.get("vector_path"),
+                    gate_vector_key=gate_cfg.get("vector_key"),
+                    gate_threshold=float(gate_cfg.get("threshold", 0.0)),
+                    gate_temperature=None if temperature is None else float(temperature),
+                    gate_mode=gate_cfg.get("mode", "hard"),
+                ))
+            self.steering = MultiLayerDenseVectorSteerer(
+                model=self.model,
+                model_device=model_device,
+                dtype=self.dtype,
+                configs=layer_configs,
             )
         elif method in {"sae", "sparse", "custom"}:
             self.steering = SparsifySteerer(
@@ -69,7 +109,7 @@ class SteeredHFCausalBackend(HFCausalBackend):
             )
         else:
             raise ValueError(
-                f"Unsupported steering.method={method!r}. Expected 'sae' or 'dense_vector'."
+                f"Unsupported steering.method={method!r}. Expected 'sae', 'dense_vector', or 'dense_vector_multi'."
             )
 
     def generate(self, prompt: str) -> str:

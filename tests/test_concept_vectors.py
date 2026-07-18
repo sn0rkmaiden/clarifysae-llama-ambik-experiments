@@ -1,6 +1,8 @@
 import torch
 
 from clarifysae_llama.discovery.concept_vectors import (
+    binary_score_diagnostics,
+    calibrate_probe_direction,
     difference_in_means,
     fit_ridge_probe,
     paired_difference_in_means,
@@ -38,3 +40,15 @@ def test_neutral_pc_removal():
     cleaned = remove_subspace(torch.tensor([1.0, 1.0]), pcs)
     assert abs(float(cleaned[0])) < 0.2
     assert float(cleaned[1]) > 0.9
+
+
+def test_recalibrate_after_projection():
+    pos = torch.tensor([[3.0, 2.0], [2.5, 1.5]])
+    neg = torch.tensor([[1.0, -2.0], [0.5, -1.5]])
+    # Imagine the first coordinate was removed as a nuisance PC.
+    cleaned = torch.tensor([0.0, 1.0])
+    probe = calibrate_probe_direction(cleaned, pos, neg)
+    diagnostics = binary_score_diagnostics(probe.direction, probe.bias, pos, neg)
+    assert probe.score_mean_positive > 0
+    assert probe.score_mean_negative < 0
+    assert diagnostics["auroc"] == 1.0

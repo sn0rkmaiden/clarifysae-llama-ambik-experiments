@@ -16,7 +16,7 @@ prompting:
 concept_discovery:
   dataset_path: outputs/synthetic/clarification_counterfactuals.jsonl
   output_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
-  concepts: [ambiguity_state, ask_policy, targeted_question, restraint_on_clear]
+  concepts: [ambiguity_state, ask_trajectory, targeted_question, restraint_on_clear]
   hookpoints:
     - model.layers.8
     - model.layers.10
@@ -36,8 +36,16 @@ concept_discovery:
   pair_id_field: pair_id
   ridge_l2: 1.0
 
-  # Add rows with concept: neutral to enable Anthropic-style nuisance-PC removal.
+  # Fit on held-out topics and report detector diagnostics on unseen topics.
+  fit_splits: [train]
+  eval_splits: [dev]
+
+  # Prompt and response representations have different pooling distributions,
+  # so estimate their nuisance subspaces from separate neutral corpora.
   neutral_pca:
-    concept: neutral
+    required: true
+    concepts_by_pooling:
+      last_nonpad: [neutral_prompt]
+      assistant_mean: [neutral_response]
     variance_fraction: 0.5
     max_components: 64

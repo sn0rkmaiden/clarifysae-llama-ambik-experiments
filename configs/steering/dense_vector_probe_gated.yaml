@@ -19,14 +19,15 @@ steering:
   enabled: true
   method: dense_vector
   vector_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
-  vector_key: ask_policy__paired_difference__model_layers_10
+  vector_key: ask_trajectory__paired_difference__model_layers_10
   hookpoint: model.layers.10
   module_path: model.layers.10
 
-  # In residual_norm_fraction mode, 0.02 means a delta with norm equal to 2% of
-  # the current residual norm. Sweep both signs and small magnitudes.
+  # Match Anthropic's convention more closely: scale by the average residual
+  # norm recorded during vector extraction, not the current token's norm.
+  # Sweep both signs and small magnitudes.
   strength: 0.02
-  scale_mode: residual_norm_fraction
+  scale_mode: recorded_residual_norm_fraction
   normalize_vector: true
   apply_to: last_position
   steer_generated_tokens_only: true
@@ -40,7 +41,8 @@ steering:
     vector_key: ambiguity_state__ridge_probe__model_layers_10
     mode: sigmoid
     threshold: 0.0
-    temperature: 1.0
+    # null uses the post-PCA calibrated score scale stored in the vector bundle.
+    temperature: null
 
 batching:
   batch_size: 2

@@ -1,0 +1,17 @@
+experiment_name: ambik_dense_vector_gate_threshold_sweep
+base_config: configs/steering/dense_vector_probe_gated.yaml
+
+sweep:
+  parameter: steering.gate.threshold
+  # Probe scores are normalized by the stored score standard deviation when
+  # sigmoid gating is used. Tune thresholds only on the development split.
+  values: [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0]
+  storage:
+    layout: flat
+    keep_generated_configs: true
+    keep_predictions: true
+    keep_results: true
+    keep_example_metrics: true
+    keep_aggregate_metrics: true
+    keep_category_metrics: true
+    cleanup_tmp_run_dirs: true

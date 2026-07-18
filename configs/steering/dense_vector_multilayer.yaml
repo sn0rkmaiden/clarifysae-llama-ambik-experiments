@@ -1,0 +1,60 @@
+experiment_name: ambik_dense_vector_multilayer
+seed: 42
+
+model:
+  name: unsloth/Llama-3.2-1B-Instruct
+  backend: hf
+  torch_dtype: float16
+  device_map: auto
+
+generation:
+  max_new_tokens: 96
+  do_sample: false
+
+prompting:
+  template: no_help
+  use_chat_template: auto
+
+steering:
+  enabled: true
+  method: dense_vector_multi
+  vector_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
+  strength: 0.01
+  scale_mode: recorded_residual_norm_fraction
+  normalize_vector: true
+  apply_to: last_position
+  steer_generated_tokens_only: true
+  norm_cap: null
+  # Anthropic-style: use the layer-specific version of the same dense concept
+  # direction across a mid-layer band. Start unconditionally; add a separate
+  # single-layer ambiguity gate only after this effect is characterized.
+  layers:
+    - hookpoint: model.layers.8
+      module_path: model.layers.8
+      vector_key: ask_trajectory__paired_difference__model_layers_8
+    - hookpoint: model.layers.10
+      module_path: model.layers.10
+      vector_key: ask_trajectory__paired_difference__model_layers_10
+    - hookpoint: model.layers.12
+      module_path: model.layers.12
+      vector_key: ask_trajectory__paired_difference__model_layers_12
+    - hookpoint: model.layers.14
+      module_path: model.layers.14
+      vector_key: ask_trajectory__paired_difference__model_layers_14
+
+batching:
+  batch_size: 2
+
+dataset:
+  path: data/raw/ambik/ambik_calib_100.csv
+  limit: null
+
+output:
+  root_dir: outputs
+
+evaluation:
+  protocol: combined_json
+  max_questions: 3
+  embed_threshold: 0.75
+  enable_nli: false
+  brevity_max: 1

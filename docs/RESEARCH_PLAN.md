@@ -7,7 +7,7 @@ The self-generated-text hypothesis is worth testing, but the most informative ve
 The recommended design is a **factorized, matched-counterfactual representation study**:
 
 1. extract a representation of **underspecification / missing required information** from minimally different ambiguous and clear prompts;
-2. extract an **ask-versus-guess policy** vector from the same ambiguous prompt paired with a targeted question or a silent guess;
+2. extract an **ask-versus-guess response trajectory** vector from the same ambiguous prompt paired with a targeted question or a silent guess;
 3. extract a **target-slot question quality** vector from targeted versus generic questions;
 4. extract a **restraint-on-clear-inputs** vector from direct answers versus unnecessary questions;
 5. use the first representation as a detector/gate and the second or third as the steering intervention.
@@ -89,7 +89,7 @@ Generate topic- and style-matched neutral/direct transcripts, find principal com
 Do not use one pooling strategy for every concept.
 
 - **Ambiguity state:** final prompt token before the assistant turn.
-- **Ask/guess policy:** final prompt token and first few assistant positions.
+- **Ask/guess trajectory:** final prompt token and first few assistant positions.
 - **Question content:** mean over the assistant question span.
 - **Story-style Anthropic replication:** mean over later tokens, e.g. after token 50, as a separate ablation.
 
@@ -115,7 +115,7 @@ Use AmbiK's paired ambiguous/unambiguous prompts and targeted/guessing responses
 
 ### Arm E — Probe-gated dense steering
 
-Compute an ambiguity-state score at the final prompt token. Apply ask-policy steering only when the score exceeds a development-calibrated threshold, or scale continuously with a sigmoid. This is the highest-priority intervention.
+Compute an ambiguity-state score at the final prompt token. Apply ask-trajectory steering only when the score exceeds a development-calibrated threshold, or scale continuously with a sigmoid. This is the highest-priority intervention.
 
 ### Arm F — Dense-to-SAE projection
 
@@ -184,7 +184,7 @@ ClarifySAE becomes one method within a controlled comparison of dense, sparse, a
 Suggested research questions:
 
 1. Does a model-self-generated matched corpus identify more causal clarification representations than lexical feature retrieval?
-2. Are clarification state, ask policy, and question content linearly separable and causally dissociable?
+2. Are clarification state, ask trajectory, and question content linearly separable and causally dissociable?
 3. Does conditional gating reduce unnecessary questions while preserving gains on ambiguous inputs?
 4. Are dense directions better represented by one SAE feature or a signed multi-feature subspace?
 5. Which intervention family transfers across datasets, ambiguity types, model families, and scales?
@@ -197,20 +197,20 @@ The main scientific claim should be conditional on results. A defensible target 
 
 - self-generated matched-counterfactual corpus generator;
 - dense difference-in-means, paired-difference, ridge-probe, and neutral-PCA utilities;
-- multi-layer residual activation extractor with concept-specific pooling;
-- dense residual-vector steering with absolute or residual-norm scaling;
-- ambiguity-probe hard/sigmoid gating cached from the prefill decision state;
-- dense-to-SAE signed sparse projection;
+- multi-layer residual activation extractor with concept-specific pooling, held-out diagnostics, and pooling-specific neutral PCA;
+- dense residual-vector steering with absolute, current-residual, or recorded-average-residual scaling;
+- post-PCA-recalibrated ambiguity-probe hard/sigmoid gating cached once from the prefill decision state;
+- dense-to-SAE nested signed sparse projection for 1–32 features;
 - example YAML configurations;
 - tests for vector extraction and gated steering;
 - a detailed usage guide.
 
-The implementation has been compiled and its six unit tests pass. No GPU-scale corpus generation or benchmark run was performed in this environment, so empirical claims remain to be tested.
+The implementation has been compiled and its ten unit tests pass. No GPU-scale corpus generation or benchmark run was performed in this environment, so empirical claims remain to be tested.
 
 ## Priority order under limited compute
 
 1. Build 200–500 matched scenarios and extract dense paired vectors at 4–6 layers.
-2. Evaluate ambiguity probe and unconditional/gated ask-policy steering on paired AmbiK.
+2. Evaluate ambiguity probe and unconditional/gated ask-trajectory steering on paired AmbiK.
 3. Compare against existing best single SAE feature, best cluster, explicit prompt, and oracle CLAM.
 4. Run dense-to-SAE projections at feature counts 1–32.
 5. Transfer the selected development configuration to held-out AmbiK categories and QuestBench.

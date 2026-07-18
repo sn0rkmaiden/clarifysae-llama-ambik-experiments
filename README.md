@@ -1,12 +1,14 @@
 # ClarifySAE experiment repository
 
-This is a compact, experiment-ready copy of `clarifysae-llama-ambik`.
-It keeps the code and configuration templates needed to run future AmbiK,
+This is a **curated** experiment repository derived from `clarifysae-llama-ambik`;
+it is not a byte-for-byte copy of the uploaded repository. It keeps the code and
+configuration templates needed to run future AmbiK,
 ClarQ-LLM, CLAM, SAE-feature, dense concept-vector, conditional-steering, and
 dense-to-SAE experiments. Historical predictions, tables, visualization data,
 packaging artifacts, and redundant configurations were intentionally omitted.
 
-The original uploaded repository was not modified.
+The original uploaded repository was not modified. A source-complete overlay can
+be produced by copying the original tree and applying this repository on top.
 
 ## Included experiment families
 
@@ -88,9 +90,19 @@ python -m clarifysae_llama.runners.generate_synthetic_corpus \
   --config configs/synthetic/generate_clarification_counterfactuals.yaml
 ```
 
-The bundled YAML is a starting template. For the main cross-model experiment,
-use one fixed, strong writer model to create a shared verified corpus for all
-target models; use target-self-generated data as an ablation.
+The bundled YAML uses the target model itself, which is the closest analogue to
+Anthropic's self-generated corpus. Also generate a second, independently written
+corpus and reuse it across target models as a cross-model control.
+
+Build the same factorized rows directly from paired AmbiK examples:
+
+```bash
+python -m clarifysae_llama.runners.build_ambik_concept_corpus \
+  --config configs/concept_vectors/build_ambik_concept_corpus.yaml
+
+python -m clarifysae_llama.runners.extract_concept_vectors \
+  --config configs/concept_vectors/extract_ambik_vectors.yaml
+```
 
 ### D. Extract dense clarification vectors
 
@@ -109,7 +121,9 @@ python -m clarifysae_llama.runners.run_eval \
   --config configs/steering/dense_vector_probe_gated.yaml
 ```
 
-This uses an ambiguity-state probe to gate an ask-policy steering vector.
+This uses an ambiguity-state probe to gate an `ask_trajectory` direction. The
+name is deliberate: positive and negative examples share the exact same prompt,
+so their representations become different only on assistant response tokens.
 
 ### F. Project a dense vector into SAE space
 
@@ -118,8 +132,31 @@ python -m clarifysae_llama.runners.project_concept_vector_to_sae \
   --config configs/sae_projection/project_dense_vector_to_sae.yaml
 ```
 
-This fits a signed sparse combination of SAE decoder directions and reports
-reconstruction quality.
+This fits nested signed sparse combinations of 1, 2, 4, 8, 16, and 32 SAE
+decoder directions and reports the full reconstruction curve.
+
+
+### Preflight before a GPU run
+
+```bash
+python scripts/preflight_experiments.py --output outputs/preflight_report.json
+```
+
+This validates every YAML file, reports absent raw/generated prerequisites,
+checks optional Python packages, and reports CUDA availability.
+
+### Dense strength and gate sweeps
+
+```bash
+python -m clarifysae_llama.runners.sweep \
+  --config configs/steering/sweep_dense_vector_strengths.yaml
+
+python -m clarifysae_llama.runners.sweep \
+  --config configs/steering/sweep_dense_gate_thresholds.yaml
+```
+
+For a closer multi-layer analogue to Anthropic's intervention, start from
+`configs/steering/dense_vector_multilayer.yaml`.
 
 ### G. ClarQ-LLM and CLAM
 
@@ -146,9 +183,9 @@ python -m clarifysae_llama.runners.run_clam_eval \
 pytest -q
 ```
 
-The included unit tests cover concept-vector extraction, ridge separation,
-neutral-PC projection, dense steering, and gating behavior. They do not replace
-GPU-scale end-to-end validation.
+The included unit tests cover concept-vector extraction and recalibration,
+neutral-PC projection, synthetic corpus expansion, dense steering, recorded-norm
+scaling, and gate caching. They do not replace GPU-scale end-to-end validation.
 
 ## What was intentionally left out
 

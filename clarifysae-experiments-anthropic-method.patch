@@ -1,0 +1,3279 @@
+diff --git a/MANIFEST.sha256 b/MANIFEST.sha256
+index 6098cf4247924eb851be8161232766c456923a65..73e5a06f46460f2dc55463f771fbad7ea564801e 100644
+--- a/MANIFEST.sha256
++++ b/MANIFEST.sha256
+@@ -1,17 +1,17 @@
+ fed21c5c952d785a11cd05c17090d43bf0eb5bf37092372e3a08cfe5e4a36e76  ./.gitignore
+-57493562f7709e2900dc27f33fc214871fc6f4ee3d36bec0f009b4799cc83d0f  ./README.md
+-cffc99cddce047dfeecd2d650bd42377a3127218e454f439a943076744aa1834  ./SOURCE.md
+-aefca926da0d078fc576713fb90a0fac64d0384a70a88f4ddd0dd65e268367a6  ./configs/1b_instruct_sweep_base.yaml
+-92cde0530868a527ae89fabf5031fdaa86d8ae3074ab7b41a8e840861e276c98  ./configs/8b_instruct_sweep_base.yaml
++56eac99422f6d6bf633212570c9366b4e359e65c8a72ff87636b8607006129f4  ./README.md
++2bddffdc817b9640eeed11aca4256b6d5646888ff254307b2637a37235ad4574  ./SOURCE.md
++2588a6ceb9681d956fe19005b111d68f93f33480f410855e1bf2514c9a8a2fa8  ./configs/1b_instruct_sweep_base.yaml
++b9f88fb351dabad44ac0fdf5f6a41afebcf8626cf7986a8801e35630a2395edc  ./configs/8b_instruct_sweep_base.yaml
+ e49c6087c2e57136f6fe337d3375e3f587d9d6f552fc138324f39bbb4ea73fc9  ./configs/README.md
+-aef42b4f93fb40630d78c93e4b3e2933da6c6c7387ac720d1359a89521edd23a  ./configs/baselines/baseline_llama31_8b_instruct_100.yaml
+-4033a9f339041569763515937d185f958636ce62b1c7a71a14440cc286e1f549  ./configs/baselines/baseline_llama32_1b_instruct_100.yaml
++b2ba02151ec895492dafe7f8320c2283e417c5d001cfa14002a426cc100551b5  ./configs/baselines/baseline_llama31_8b_instruct_100.yaml
++cbc9e7f78be9909ade4b4463305bea292adb63ef178b1f34d0e6f348484c0605  ./configs/baselines/baseline_llama32_1b_instruct_100.yaml
+ f6be883b48018906cb504390c9241f3ceb75b49b67892f97f26b1e74f78c1ba4  ./configs/baselines/clam_ambik_gemma2_9b.yaml
+ 770c9c876d61706df6b6333b9fcdac11aae91f87b572a019a60ae460ff5dbe00  ./configs/baselines/clam_ambik_gemma_2b.yaml
+ 6a95ca337e2aff14fdf37aeada7b70166d211f61a68e54b28a39445e0d818a5a  ./configs/baselines/clam_ambik_llama_1b.yaml
+ 1a98d1ce4934ba7827b507507eedd6d1239d4f5c1ecfef1f9bff9965c0471f5d  ./configs/baselines/clam_ambik_llama_8b.yaml
+-cc33439644613fa17fd7f071345a8ece0a7a6c55ac7176c303d1069df2ae85ce  ./configs/clarq/1b_instruct_clarq_sweep_base.yaml
+-a4ca6762fd79ec00dba021e01e72884291a73a5ca2659a50c08124c50260901e  ./configs/clarq/8b_instruct_clarq_sweep_base.yaml
++112e7bddb3762b6d08b5b13d7f89e3dc227f9cd85696d47e9cba8c512a8c994f  ./configs/clarq/1b_instruct_clarq_sweep_base.yaml
++1cce8e6f8a1ef0f247cab1be9b4bd3e2eb724428e2ee4d3b2d63e3939c8392f6  ./configs/clarq/8b_instruct_clarq_sweep_base.yaml
+ a2b1fd65b92d5c08982abe6f17aa0bc1ac86583bf1659c05dffc5f157e392a33  ./configs/clarq/baseline_clarq_gemma2_9b_llama31_8b.yaml
+ 0a913500ba708c630bd34c821695f4f3d3c5a0e1c409d12a0a152887d1b9fb5d  ./configs/clarq/baseline_clarq_gemma_2b_llama31_8b.yaml
+ d9100f5ae46d0e9397224b04576c04ee4704bd5cde4265e2bf7d3ed8eceac72d  ./configs/clarq/baseline_clarq_llama31_8b.yaml
+@@ -22,39 +22,45 @@ a6e5414fb2a2a71f502de011821bf43ac24e0affb4b8842d453a8416c6c8d502  ./configs/clar
+ 3a221e98a5bcc81f42f730e801415c30c49a3e4212a735bb6dde3658fee60c45  ./configs/clarq/steer_clarq_gemma_2b_llama31_8b.yaml
+ ad085adcdaa9ea5d12727c102e4a361975dfe22e0107f27fb6496fa444e9cb79  ./configs/clarq/steer_clarq_llama31_8b.yaml
+ cd8a5d708197eeb2a713a03eb31975e42a4739bfad857611a6776fc8bce8b03e  ./configs/clarq/steer_clarq_llama32_1b.yaml
+-f9d3410670fd299a64235544a73ff4868d2e11837b2c16028d48bad6e541c483  ./configs/clarq/sweep_single_feature_strengths_clarq.yaml
++33532a35fc10ccf80c926b8176ff562cc63f1aabbc2719c77d8f2265df5d5637  ./configs/clarq/sweep_single_feature_strengths_clarq.yaml
+ c546dbe3536f470de7c15f20728f177d11e99dd158528649d33e5747b2a7a3b9  ./configs/clarq/sweep_single_feature_strengths_gemma2_9b_clarq.yaml
+ 6903f5fafe54bee1ceba79b582ceb2125ae5bb38aa7267741d8fe24f83c26d89  ./configs/clarq/sweep_single_feature_strengths_gemma_2b_clarq.yaml
+-a88c6e4ba5b1f3be47459a3a3631db918f35a54429c5ec5f8a538987fdd1cf92  ./configs/concept_vectors/extract_clarification_vectors.yaml
+-ca9dd38165a691f08d5ec62fbff7e4b2ca938b15e42ebf2c6fb7ce22f6724a5f  ./configs/discovery/1b/discover_llama32_1b_instruct_vocab_layer10resid.yaml
+-381adf83bfa6e07057eda1c08ca5589d69ecf123e8b7cc8cd42c42c85ccadc29  ./configs/discovery/1b/inspect_scores_layer10resid_Cvocab.yaml
+-8023957c89a968931f59e29acd86390c8d5fd0d3aaee7c7fb4287a7e32557ca8  ./configs/discovery/1b/inspect_scores_layer10resid_Qvocab.yaml
+-7294526970357c104c1a2dbdddaebbd57862092521aec2d1aa49f522a340dfe3  ./configs/discovery/1b/output_scores_llama32_1b_instruct_Cvocab_10resid.yaml
+-4deba9253e8753d00d8477cf14a608d3a1d058a4167379d7396a85c8348e6d7d  ./configs/discovery/1b/output_scores_llama32_1b_instruct_Qvocab_10resid.yaml
+-dcb144782a96f7fe63b38704e6378257a1a20478c9a746a820ca7e1d2c78d98c  ./configs/discovery/8b/discover_llama31_8b_instruct_vocab_layer23resid.yaml
+-50a42f61e353c79ec049b644ad57e0a2f543e4071e6f9e6ca449ba5be25f4dd4  ./configs/discovery/8b/inspect_scores_8b_instruct_layer23resid_Cvocab.yaml
+-58b016691f74b05d39efecee71b973fa92259fc8ff132d34b307e526423d3c00  ./configs/discovery/8b/inspect_scores_8b_instruct_layer23resid_Qvocab.yaml
+-12da456405091256577e3cef7e5841cb3d2b25fe6d4dee463379000b0af67331  ./configs/discovery/8b/output_scores_llama31_8b_instruct_Cvocab_23resid.yaml
+-db68c708e30b960e04b59930217e5277b626ab0d3075b89510542e01523c1826  ./configs/discovery/8b/output_scores_llama31_8b_instruct_Qvocab_23resid.yaml
+-5058a82c8f9b64fdd6fa98ce74b241bbfb4eb17ba94bcd10ef836e282c6b6af2  ./configs/sae_projection/project_dense_vector_to_sae.yaml
+-12bb8e3cda81dd45fbc5506ce028afaf9d12c06507fe2ccc4637e211483ac336  ./configs/steering/dense_vector_probe_gated.yaml
++0be20f03fd5a01b2b1394229cdd45c249b64b944e13d2d7e5cb03279b36e17c0  ./configs/concept_vectors/build_ambik_concept_corpus.yaml
++fe1d7c56ed5f78e5368a096b4ee12634d3b47a5713fb705da04ff38e976206d0  ./configs/concept_vectors/extract_ambik_vectors.yaml
++b0f88a7c8fbb1d4f3cd3b1c3baca186b0273fa68e1923dc00b8d95118b43d581  ./configs/concept_vectors/extract_clarification_vectors.yaml
++d4b76eed431669daf6e6b08b0c9037b85f151c02678aebc129c0a8754efbec61  ./configs/discovery/1b/discover_llama32_1b_instruct_vocab_layer10resid.yaml
++77f161db8ff182db73243184c55a693efd3f737115337e1aaf826fd3a27e7579  ./configs/discovery/1b/inspect_scores_layer10resid_Cvocab.yaml
++4f9ffa4ac9d0aa79f62e81c2986374ae7f9397d89c4eb095bba66d497f7d047a  ./configs/discovery/1b/inspect_scores_layer10resid_Qvocab.yaml
++262c37c00587476e6b1825dad458e89daad7d1d326d7ebdd3129405f1db240ef  ./configs/discovery/1b/output_scores_llama32_1b_instruct_Cvocab_10resid.yaml
++4ea1e1359218a38d9a3e0fb6057cfae802ade5c019cf8c0c73a1918a07a3671d  ./configs/discovery/1b/output_scores_llama32_1b_instruct_Qvocab_10resid.yaml
++cea2639a803ee634bf3e79aebabe29a605a6734e48250cc0656d2a9041c4667f  ./configs/discovery/8b/discover_llama31_8b_instruct_vocab_layer23resid.yaml
++fd68e0d476ef061c96ad39089485e4fffb21ac4bc013d0f2f26b6629ae1e9589  ./configs/discovery/8b/inspect_scores_8b_instruct_layer23resid_Cvocab.yaml
++f35057812db9ee8ba8b66815e6cdfecd52f729f2f66dd7f321d637bf00f7d042  ./configs/discovery/8b/inspect_scores_8b_instruct_layer23resid_Qvocab.yaml
++039453804ee012b92214b47e915f43e0b1de05244832c789b9a4afc673c4a681  ./configs/discovery/8b/output_scores_llama31_8b_instruct_Cvocab_23resid.yaml
++8b749a8d887a25830247b0f39f7d4ef6a79b1ba2863c0d7c03156384b9529b7d  ./configs/discovery/8b/output_scores_llama31_8b_instruct_Qvocab_23resid.yaml
++7b889a940b5a5848214d6b5615da803cc7d0b4cd780054b84387734501fbceec  ./configs/sae_projection/project_dense_vector_to_sae.yaml
++b9287821d61ee5e9d3d746794928ef4a405d63ec08166ad823dad9cbf838cffd  ./configs/steering/dense_vector_multilayer.yaml
++65f17bd8306706cc91d5549ed2ae3098153c0bacde56251ec757177dddfdbe9d  ./configs/steering/dense_vector_probe_gated.yaml
++40368616c6ae487fa687e2c9ecba8c606fd2dc57d4a453e3b6a1d99106a55093  ./configs/steering/sweep_dense_gate_thresholds.yaml
++5793d8244d0635596540deeee49b10e7ed146151d77605fe3a0bab97317dcac8  ./configs/steering/sweep_dense_vector_strengths.yaml
+ 9a5b923becbbf86123b65fbaaa3cfb991ad88d86c6270f71412dc66b4a43943a  ./configs/steering/sweep_single_feature_strengths_1b_chosen_layers10_13.yaml
+-ff6205ac3b84bd4e8f781c063e91573c9afe245dd6fa058174b88dfdbbddbe9f  ./configs/steering/sweep_single_feature_strengths_8b_instruct_chosen.yaml
+-097b9229174a8aa0093c17516828ae22b6b17554c9ea39bcab6369619c2c784c  ./configs/synthetic/generate_clarification_counterfactuals.yaml
++04e7ee553d992e7ebb8cc6d2d27110683cc819ada8a7f76b0d473764081f0b27  ./configs/steering/sweep_single_feature_strengths_8b_instruct_chosen.yaml
++4d5acd06525603d6c14a41078b2ba06a5cbd38b0c1ded5ba375daff7070f57d8  ./configs/synthetic/generate_clarification_counterfactuals.yaml
+ 10ce94a040d7707467574add8951623c1af0263aec305044cdf866d56ade42b4  ./data/prompts/clam_classification_demos.json
+ 0db226bac4ec72380547798f2707418bc3ff734f615c2a900a3a95fa07179b62  ./data/prompts/clam_question_demos.json
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./data/raw/.gitkeep
+ e435d1d027188703a882e206a800fc7e6481150f20e2b51bd12c25c8a9994643  ./data/vocabs/clarifying_vocab.json
+ 5c1a900e8e42a92fce1b3e0af1b9a9f1a533c55a377d3deddd88696d123d1264  ./data/vocabs/question_vocab.json
+-28204fc52ee4495e0fee46f172cebff190038fa3f9978185462ebd2c98216bea  ./docs/ANTHROPIC_ADAPTATION.md
++60f731e8afc9e51634d140af8504408e6403059f4dcbf50d32dac49d59d9a213  ./docs/ANTHROPIC_ADAPTATION.md
++26360b7a40c00868765d6be1ff9b6e39f5a2004a0ae4cb314bd66a752fe7a4dc  ./docs/CODE_REVIEW_AND_EXECUTION_PLAN.md
+ 525b4c75a93a00f22ae705358386b6c664c0b55e68d816527e05b39960fe6a21  ./docs/REPOSITORY_SCOPE.md
+-3975f730bb8381e75d349bdc06f4c2f2fd3f71de50d0c54992e9180a13894a2f  ./docs/RESEARCH_PLAN.md
+-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./outputs/.gitkeep
+-056cf5755608daf1376f1f22081b120334f1085e95a591f721accbe1c098c534  ./pyproject.toml
++c303b3c3ca9a1263ada058073a55fa1431c57d673723d0e6073c4ab996399fb6  ./docs/RESEARCH_PLAN.md
++788dfb618dc6cbf435725eb73a84665bed236c1b0839a37daf10734912d79cd4  ./pyproject.toml
+ 0f92510510e26f40512669437ae6e726a8af3e5746c8cb7559c4e7114e519fb1  ./requirements.txt
+ 58bb04818e893a8e0da13bd0f3107381584e6eeb483e075637d7d2437f00c4d3  ./scripts/build_decoder_similarity_feature_sets.py
+ ddf64536e200681fb7c61d05697be1cb7dbc76a1bf7768720f47efc46145e2c4  ./scripts/create_clam_demos.py
+-d5596ef2e6300531336666868c937ea5ade54e59a4e2f5781deb1de7e0507881  ./scripts/prepare_llama_lmsys_tokenized_v2.py
++cd976d40d689c232441cf0b6c21d5277ea302f7fc690f378cd9c5ba1c8cac7c3  ./scripts/preflight_experiments.py
++41a174bd5289a60da94f1f9a19936a90e7dae5716973753d8649e17ffbb3dbd6  ./scripts/prepare_llama_lmsys_tokenized_v2.py
+ 4af0bfb831667ce85051c4a05c02d226d7d4c9f6f5712ad7e8a0e0a6e0dea1b2  ./scripts/run_baseline.sh
+ 97112b710aef8a6a39d8a3a5e7a26ded89e7039c90cfc2abfcaaa0970e31e04f  ./scripts/run_steered.sh
+ 0ad8f09464815f1aca25af258bd749ff83678100f8b464a66ab4e53406e547b6  ./scripts/sweep_single_feature_strengths.sh
+@@ -62,10 +68,10 @@ d5596ef2e6300531336666868c937ea5ade54e59a4e2f5781deb1de7e0507881  ./scripts/prep
+ 75ad4f4c2943325f88064ad2beae890b59674be2bf0404b30afc5584dc4de4bb  ./src/clarifysae_llama/__init__.py
+ 51bde0ebc8dcc604b4938ce7afd671f5aff37c5a6675c9e89e633a2c20f54cf3  ./src/clarifysae_llama/backends/__init__.py
+ 14b743357d12c15746ad284e708c89e3227e7e615d4bfef93c54138a25832941  ./src/clarifysae_llama/backends/hf_backend.py
+-a71c2a5bcfa9bbae074800affef1fed4ac3f58b8e328c8d172a4c4914af3719a  ./src/clarifysae_llama/backends/steered_hf_backend.py
++790cfc45603e357f6ffd0a2a8fc6720a518a92a11cb69961a9804ff8f3a31666  ./src/clarifysae_llama/backends/steered_hf_backend.py
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./src/clarifysae_llama/clarq_legacy/__init__.py
+ c5d87c11c5c1f51dfd2771d3ff46a044f6bdd4d9f1679b483455c1b8517172d5  ./src/clarifysae_llama/clarq_legacy/backend_adapter.py
+-66af80604236fe1cdd2afbb2222f47bae490a0d2f3485aba7d330e558e50626a  ./src/clarifysae_llama/clarq_legacy/json_parsing.py
++7e0c3ff119f06116a14ad18bc1689675863fc7a7b6ec79f5fb50fffe1b803062  ./src/clarifysae_llama/clarq_legacy/json_parsing.py
+ a1fac11e0732513eb5d857bfddb5fc97b0d8103014c275feedb586dde222f7e9  ./src/clarifysae_llama/clarq_legacy/multi_info_provider_agent.py
+ 5ce54eb388af4f43847038a7523b249079c5b6d2451aca8b1c0c20abd0a0ed2a  ./src/clarifysae_llama/clarq_legacy/provider_agent.py
+ f5010de84fe0e8494f86d7dbdefb5901bd17900f6cbf36a124030ad464987e93  ./src/clarifysae_llama/clarq_legacy/seeker_agent.py
+@@ -76,7 +82,7 @@ f5010de84fe0e8494f86d7dbdefb5901bd17900f6cbf36a124030ad464987e93  ./src/clarifys
+ 317210d0e76145d09f21cdaa807ab95c53dd1619f591d843df3c5f256dd92af1  ./src/clarifysae_llama/data/clam_prompting.py
+ bbc031186087da6eed50224c8447284c6f5fc7223d87c590c1d060c14c61977a  ./src/clarifysae_llama/data/prompting.py
+ 6547b94e0e897be02bccbd6874c1b6dd365970ea91404f4fff2113db511f1279  ./src/clarifysae_llama/discovery/__init__.py
+-4bf2fbe1e2685c8eb6287dd54733f8482e7b7ea1c5a15d59ae54738f1e7d4686  ./src/clarifysae_llama/discovery/concept_vectors.py
++d0bccbf02c7613d83c76b56189e3a975e4585be83f92b2cee4b15eba9e7e2de9  ./src/clarifysae_llama/discovery/concept_vectors.py
+ daab9364c02d63f5e35d851c3808ce4bc79f7074e98a5259751acf236f2c396f  ./src/clarifysae_llama/discovery/dataset.py
+ 348c471599ccc50d787d805ba88e0b4242082288a190e536a9340d8e666b2437  ./src/clarifysae_llama/discovery/output_scores.py
+ 416f4f361e6c1a461898cdaae5a73b96dd4abc78f6c42f327ecdd8a8570bfea6  ./src/clarifysae_llama/discovery/sae_utils.py
+@@ -89,12 +95,13 @@ a8ca06a7577352ad5b7c1fa1abd1b1edb9c6c81dde8144df2734ad57038f4cfa  ./src/clarifys
+ 186ba2484f70751646a050906aecd929184fd46958d7103fa57a256c6427549d  ./src/clarifysae_llama/eval/metrics.py
+ 4e04f97391edc43bfc0f225b543a543a0ec5c29d75972680cc191928bbf9d43f  ./src/clarifysae_llama/eval/reporting.py
+ 57ef40ba01e723223896556864a5ab727594286528328953ea07941ce210a38b  ./src/clarifysae_llama/eval/text_matching.py
++e43f3f12a905d439d584eb2f2db1f5ff044d758b2a48f3993f64ef4bd3191936  ./src/clarifysae_llama/runners/build_ambik_concept_corpus.py
+ 5a7f1d57ba200351c8cedb14c9be80953ff2fac8847b0a218bd3e8e46004b32e  ./src/clarifysae_llama/runners/compute_output_scores.py
+ f3af9df1d4e365b279c684e72a68ae0ce73dbd557fe0087543001e9ba5819a90  ./src/clarifysae_llama/runners/discover_features.py
+-2614664763503fbe660385e8709cb89edf974bc342753bd8be23a2292c902b69  ./src/clarifysae_llama/runners/extract_concept_vectors.py
+-8ac2b6be8d665c8a5b527e617171ff0065f8b59f2ff3b911468af2260090648d  ./src/clarifysae_llama/runners/generate_synthetic_corpus.py
++e666316b368d30bebfa8739451f3bbbba4f0797d0b40f8933021d9cef549b87a  ./src/clarifysae_llama/runners/extract_concept_vectors.py
++f886a55313abfc328efd30ded52821457d80666f61650fa2e0ff7d14d0b5f64a  ./src/clarifysae_llama/runners/generate_synthetic_corpus.py
+ ab1aca76bccd50bf5e0de648571edcd10f556b8d646b9a551a125310d41dd12e  ./src/clarifysae_llama/runners/inspect_scores.py
+-0dded11f0384c64860478c3348d0ad64117b74dc07bb6162720855297448779d  ./src/clarifysae_llama/runners/project_concept_vector_to_sae.py
++444e08d1950fbd18920e5494853edba56a9af2ae8173e523ab63c6510e77b0d0  ./src/clarifysae_llama/runners/project_concept_vector_to_sae.py
+ 245e1a2919624bdc3c472ebd11ac8d1be35433eaa3c7062e017a75a995facff8  ./src/clarifysae_llama/runners/run_clam_eval.py
+ 975ed236d927751eaad28732296c98c6f9b77bde9241b1665f1602ed0359e60e  ./src/clarifysae_llama/runners/run_clarq_eval.py
+ c27758dd6dafddeb912e3d7b63a20abe32d8330b206e57467555dce023885ee1  ./src/clarifysae_llama/runners/run_eval.py
+@@ -102,7 +109,7 @@ d252c9ff384501e2cd15ec5bef9c9270aaec880dc7bf1c77c578e16e77cad1f1  ./src/clarifys
+ 644d015ff61ce548c5f9f690accf616d1d3d4ab41944e5df49695b435f5f5dd8  ./src/clarifysae_llama/runners/sweep.py
+ dd26d4070efe06c0949b6149f7b80b6c763128fda3331f821b194c4b192cf53a  ./src/clarifysae_llama/steering/__init__.py
+ 4a154e09c337c30460dd07af814b2c70a17205e84b913da0c56ebe6703dca0b0  ./src/clarifysae_llama/steering/config.py
+-352f5c5d13964318a6f82348d56aa25bbc2bfbf48d21c37bbbbad4051adb968d  ./src/clarifysae_llama/steering/dense_vector_steerer.py
++c1a5bfe74e9c45e276dec60abcdcc583f33ac360a8e0d6eea74ac30a0f7ae5bb  ./src/clarifysae_llama/steering/dense_vector_steerer.py
+ ad2e335cb8c194677048e38470fdbffd596b650a2d773f324c5d5f2be98e440c  ./src/clarifysae_llama/steering/feature_registry.py
+ 2cc1e9cf2b0c300fa15732025e578a665165118c8b3d2044aa4abf9c61f60eb0  ./src/clarifysae_llama/steering/hook_utils.py
+ 1500cec81af58103ed64b3ed8f13f53b46900975b2ff48203b773ae4bb87e75b  ./src/clarifysae_llama/steering/sparsify_steerer.py
+@@ -110,5 +117,6 @@ b65d2521860b77a54461f331d50ab6162d8e4e4228ab851eaa67e11284ee95c3  ./src/clarifys
+ afa4b8d1bb1786e5d424da1a548b6021866b65836dc779e4330ed95827ad86eb  ./src/clarifysae_llama/utils/logging.py
+ 79df505c71a36ea670f516bda9c70de64e72a03e7c92009b9e00b2e2bf1c5b72  ./src/clarifysae_llama/utils/parsing.py
+ d5c42fea97dd899788162728af6c66ba7b66671f49382a8e30a3aa3969e1fc44  ./src/clarifysae_llama/utils/seed.py
+-1e292b965a6c6983baa4918dd692c818d73604fa241698784a019dd5272b0f11  ./tests/test_concept_vectors.py
+-3b306c2eabd214a878774d5ae35f4be25367008ff0eb3ae86a6295c7b8cb3f1e  ./tests/test_dense_vector_steerer.py
++54be96025fac46efb67653fb4b34ab631edd8bfa305464a7b13f9e7b3d5ed403  ./tests/test_concept_vectors.py
++98e6d3bb45a2756bab83c144ae96a0791d7a01a9aea954421d2e6342aab67a5c  ./tests/test_dense_vector_steerer.py
++9fccaef64990ff1a24031b33b595d8ced311f3cffe77cfe42fb123dbc68d2f11  ./tests/test_synthetic_corpus.py
+diff --git a/README.md b/README.md
+index 1566063fdf5b256aef11925f5281b9d540019b8d..03a9e557e338363a0ecd3eb452a727d197cb745b 100644
+--- a/README.md
++++ b/README.md
+@@ -1,12 +1,14 @@
+ # ClarifySAE experiment repository
+ 
+-This is a compact, experiment-ready copy of `clarifysae-llama-ambik`.
+-It keeps the code and configuration templates needed to run future AmbiK,
++This is a **curated** experiment repository derived from `clarifysae-llama-ambik`;
++it is not a byte-for-byte copy of the uploaded repository. It keeps the code and
++configuration templates needed to run future AmbiK,
+ ClarQ-LLM, CLAM, SAE-feature, dense concept-vector, conditional-steering, and
+ dense-to-SAE experiments. Historical predictions, tables, visualization data,
+ packaging artifacts, and redundant configurations were intentionally omitted.
+ 
+-The original uploaded repository was not modified.
++The original uploaded repository was not modified. A source-complete overlay can
++be produced by copying the original tree and applying this repository on top.
+ 
+ ## Included experiment families
+ 
+@@ -88,9 +90,19 @@ python -m clarifysae_llama.runners.generate_synthetic_corpus \
+   --config configs/synthetic/generate_clarification_counterfactuals.yaml
+ ```
+ 
+-The bundled YAML is a starting template. For the main cross-model experiment,
+-use one fixed, strong writer model to create a shared verified corpus for all
+-target models; use target-self-generated data as an ablation.
++The bundled YAML uses the target model itself, which is the closest analogue to
++Anthropic's self-generated corpus. Also generate a second, independently written
++corpus and reuse it across target models as a cross-model control.
++
++Build the same factorized rows directly from paired AmbiK examples:
++
++```bash
++python -m clarifysae_llama.runners.build_ambik_concept_corpus \
++  --config configs/concept_vectors/build_ambik_concept_corpus.yaml
++
++python -m clarifysae_llama.runners.extract_concept_vectors \
++  --config configs/concept_vectors/extract_ambik_vectors.yaml
++```
+ 
+ ### D. Extract dense clarification vectors
+ 
+@@ -109,7 +121,9 @@ python -m clarifysae_llama.runners.run_eval \
+   --config configs/steering/dense_vector_probe_gated.yaml
+ ```
+ 
+-This uses an ambiguity-state probe to gate an ask-policy steering vector.
++This uses an ambiguity-state probe to gate an `ask_trajectory` direction. The
++name is deliberate: positive and negative examples share the exact same prompt,
++so their representations become different only on assistant response tokens.
+ 
+ ### F. Project a dense vector into SAE space
+ 
+@@ -118,8 +132,31 @@ python -m clarifysae_llama.runners.project_concept_vector_to_sae \
+   --config configs/sae_projection/project_dense_vector_to_sae.yaml
+ ```
+ 
+-This fits a signed sparse combination of SAE decoder directions and reports
+-reconstruction quality.
++This fits nested signed sparse combinations of 1, 2, 4, 8, 16, and 32 SAE
++decoder directions and reports the full reconstruction curve.
++
++
++### Preflight before a GPU run
++
++```bash
++python scripts/preflight_experiments.py --output outputs/preflight_report.json
++```
++
++This validates every YAML file, reports absent raw/generated prerequisites,
++checks optional Python packages, and reports CUDA availability.
++
++### Dense strength and gate sweeps
++
++```bash
++python -m clarifysae_llama.runners.sweep \
++  --config configs/steering/sweep_dense_vector_strengths.yaml
++
++python -m clarifysae_llama.runners.sweep \
++  --config configs/steering/sweep_dense_gate_thresholds.yaml
++```
++
++For a closer multi-layer analogue to Anthropic's intervention, start from
++`configs/steering/dense_vector_multilayer.yaml`.
+ 
+ ### G. ClarQ-LLM and CLAM
+ 
+@@ -146,9 +183,9 @@ python -m clarifysae_llama.runners.run_clam_eval \
+ pytest -q
+ ```
+ 
+-The included unit tests cover concept-vector extraction, ridge separation,
+-neutral-PC projection, dense steering, and gating behavior. They do not replace
+-GPU-scale end-to-end validation.
++The included unit tests cover concept-vector extraction and recalibration,
++neutral-PC projection, synthetic corpus expansion, dense steering, recorded-norm
++scaling, and gate caching. They do not replace GPU-scale end-to-end validation.
+ 
+ ## What was intentionally left out
+ 
+diff --git a/SOURCE.md b/SOURCE.md
+index 5842aef06b49ffe02fc63fd627202b3b74d7481e..4e97a8b69cbeb3e6d7985fe19ef50a9734542f35 100644
+--- a/SOURCE.md
++++ b/SOURCE.md
+@@ -1,9 +1,19 @@
+-# Source
++# Source and provenance
+ 
+-This experiment-only repository was curated from the uploaded
+-`clarifysae-llama-ambik` repository at Git commit:
++This experiment repository was curated from the user-supplied
++`clarifysae-llama-ambik` archive and extended with the concept-vector,
++gated-steering, projection, validation, and experiment-planning additions
++prepared in this review.
+ 
+-`0e538aa3cfb8e72ffc910b574452f837a7c0b1d5`
++The supplied archive's metadata named Git commit
++`0e538aa3cfb8e72ffc910b574452f837a7c0b1d5`. The archive did not include a
++`.git` directory, so that commit identity could not be independently verified
++from the supplied files.
+ 
+-It also contains the Anthropic-inspired concept-vector additions prepared for
+-this project. The original repository/archive was not modified.
++The original uploaded archives were not modified. Two deliverables are
++provided:
++
++1. this compact, source-focused experiment repository; and
++2. a full overlay repository that starts from the supplied earlier repository
++   and overlays every patched/new file from this repository, preserving the
++   earlier historical outputs and visualization assets.
+diff --git a/configs/concept_vectors/build_ambik_concept_corpus.yaml b/configs/concept_vectors/build_ambik_concept_corpus.yaml
+new file mode 100644
+index 0000000000000000000000000000000000000000..85d8b65a9f38c45be2dd12239625d8149d232752
+--- /dev/null
++++ b/configs/concept_vectors/build_ambik_concept_corpus.yaml
+@@ -0,0 +1,11 @@
++experiment_name: build_ambik_concept_corpus
++seed: 42
++
++ambik_concept_corpus:
++  input_path: data/raw/ambik/ambik_test_400.csv
++  output_path: outputs/ambik/ambik_concept_corpus.jsonl
++  limit: null
++  generic_question: Could you provide more details?
++  splits:
++    train: 0.70
++    dev: 0.15
+diff --git a/configs/concept_vectors/extract_ambik_vectors.yaml b/configs/concept_vectors/extract_ambik_vectors.yaml
+new file mode 100644
+index 0000000000000000000000000000000000000000..7a2af6df748497d248db981206229b1d6bde9ce0
+--- /dev/null
++++ b/configs/concept_vectors/extract_ambik_vectors.yaml
+@@ -0,0 +1,37 @@
++experiment_name: extract_ambik_clarification_vectors
++seed: 42
++
++model:
++  name: unsloth/Llama-3.2-1B-Instruct
++  torch_dtype: float16
++  device_map: auto
++
++generation:
++  max_new_tokens: 1
++  do_sample: false
++
++prompting:
++  use_chat_template: false
++
++concept_discovery:
++  dataset_path: outputs/ambik/ambik_concept_corpus.jsonl
++  output_path: outputs/concept_vectors/llama32_1b_ambik_vectors.pt
++  concepts: [ambiguity_state, ask_trajectory, targeted_question, restraint_on_clear]
++  hookpoints: [model.layers.8, model.layers.10, model.layers.12, model.layers.14]
++  module_paths: {}
++  batch_size: 8
++  max_length: 512
++  pooling: recommended
++  mean_after_token: 50
++  methods: [paired_difference, difference_in_means, ridge_probe]
++  pair_id_field: pair_id
++  ridge_l2: 1.0
++  fit_splits: [train]
++  eval_splits: [dev]
++  neutral_pca:
++    required: true
++    concepts_by_pooling:
++      last_nonpad: [neutral_prompt]
++      assistant_mean: [neutral_response]
++    variance_fraction: 0.5
++    max_components: 64
+diff --git a/configs/concept_vectors/extract_clarification_vectors.yaml b/configs/concept_vectors/extract_clarification_vectors.yaml
+index c800bcc43dd0fa86f03e97b8b20a99807aa00c94..9c0b4fca57b79d3529d5bb545a9346339c9537d6 100644
+--- a/configs/concept_vectors/extract_clarification_vectors.yaml
++++ b/configs/concept_vectors/extract_clarification_vectors.yaml
+@@ -16,7 +16,7 @@ prompting:
+ concept_discovery:
+   dataset_path: outputs/synthetic/clarification_counterfactuals.jsonl
+   output_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
+-  concepts: [ambiguity_state, ask_policy, targeted_question, restraint_on_clear]
++  concepts: [ambiguity_state, ask_trajectory, targeted_question, restraint_on_clear]
+   hookpoints:
+     - model.layers.8
+     - model.layers.10
+@@ -36,8 +36,16 @@ concept_discovery:
+   pair_id_field: pair_id
+   ridge_l2: 1.0
+ 
+-  # Add rows with concept: neutral to enable Anthropic-style nuisance-PC removal.
++  # Fit on held-out topics and report detector diagnostics on unseen topics.
++  fit_splits: [train]
++  eval_splits: [dev]
++
++  # Prompt and response representations have different pooling distributions,
++  # so estimate their nuisance subspaces from separate neutral corpora.
+   neutral_pca:
+-    concept: neutral
++    required: true
++    concepts_by_pooling:
++      last_nonpad: [neutral_prompt]
++      assistant_mean: [neutral_response]
+     variance_fraction: 0.5
+     max_components: 64
+diff --git a/configs/sae_projection/project_dense_vector_to_sae.yaml b/configs/sae_projection/project_dense_vector_to_sae.yaml
+index f19047fa2df5ac73d0b5636366f736c2a1601b8f..00098289401fd56bc7ae36c56f92fee27525d9c4 100644
+--- a/configs/sae_projection/project_dense_vector_to_sae.yaml
++++ b/configs/sae_projection/project_dense_vector_to_sae.yaml
+@@ -2,7 +2,7 @@ experiment_name: project_dense_clarification_vector_to_sae
+ 
+ sae_projection:
+   vector_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
+-  vector_key: ask_policy__paired_difference__model_layers_10
++  vector_key: ask_trajectory__paired_difference__model_layers_10
+   loader: sparsify
+   sae_repo: apart/llama3.2_1b_instruct_saes_vader
+   hookpoint: model.layers.10
+@@ -13,5 +13,6 @@ sae_projection:
+   dtype: float32
+   candidate_k: 256
+   selected_k: 16
++  selected_ks: [1, 2, 4, 8, 16, 32]
+   normalize_weights: true
+-  output_dir: outputs/sae_projection/ask_policy_layer10
++  output_dir: outputs/sae_projection/ask_trajectory_layer10
+diff --git a/configs/steering/dense_vector_multilayer.yaml b/configs/steering/dense_vector_multilayer.yaml
+new file mode 100644
+index 0000000000000000000000000000000000000000..f19bcc0ad9e1e96ea9800238c8b54993298dee7b
+--- /dev/null
++++ b/configs/steering/dense_vector_multilayer.yaml
+@@ -0,0 +1,60 @@
++experiment_name: ambik_dense_vector_multilayer
++seed: 42
++
++model:
++  name: unsloth/Llama-3.2-1B-Instruct
++  backend: hf
++  torch_dtype: float16
++  device_map: auto
++
++generation:
++  max_new_tokens: 96
++  do_sample: false
++
++prompting:
++  template: no_help
++  use_chat_template: auto
++
++steering:
++  enabled: true
++  method: dense_vector_multi
++  vector_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
++  strength: 0.01
++  scale_mode: recorded_residual_norm_fraction
++  normalize_vector: true
++  apply_to: last_position
++  steer_generated_tokens_only: true
++  norm_cap: null
++  # Anthropic-style: use the layer-specific version of the same dense concept
++  # direction across a mid-layer band. Start unconditionally; add a separate
++  # single-layer ambiguity gate only after this effect is characterized.
++  layers:
++    - hookpoint: model.layers.8
++      module_path: model.layers.8
++      vector_key: ask_trajectory__paired_difference__model_layers_8
++    - hookpoint: model.layers.10
++      module_path: model.layers.10
++      vector_key: ask_trajectory__paired_difference__model_layers_10
++    - hookpoint: model.layers.12
++      module_path: model.layers.12
++      vector_key: ask_trajectory__paired_difference__model_layers_12
++    - hookpoint: model.layers.14
++      module_path: model.layers.14
++      vector_key: ask_trajectory__paired_difference__model_layers_14
++
++batching:
++  batch_size: 2
++
++dataset:
++  path: data/raw/ambik/ambik_calib_100.csv
++  limit: null
++
++output:
++  root_dir: outputs
++
++evaluation:
++  protocol: combined_json
++  max_questions: 3
++  embed_threshold: 0.75
++  enable_nli: false
++  brevity_max: 1
+diff --git a/configs/steering/dense_vector_probe_gated.yaml b/configs/steering/dense_vector_probe_gated.yaml
+index 6b0d708bcf7c21e0ff88c4ac2eb3dc8f18dabdbe..502c8f6440c4ad8cb052a28cc0946b9bc45d6078 100644
+--- a/configs/steering/dense_vector_probe_gated.yaml
++++ b/configs/steering/dense_vector_probe_gated.yaml
+@@ -19,14 +19,15 @@ steering:
+   enabled: true
+   method: dense_vector
+   vector_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
+-  vector_key: ask_policy__paired_difference__model_layers_10
++  vector_key: ask_trajectory__paired_difference__model_layers_10
+   hookpoint: model.layers.10
+   module_path: model.layers.10
+ 
+-  # In residual_norm_fraction mode, 0.02 means a delta with norm equal to 2% of
+-  # the current residual norm. Sweep both signs and small magnitudes.
++  # Match Anthropic's convention more closely: scale by the average residual
++  # norm recorded during vector extraction, not the current token's norm.
++  # Sweep both signs and small magnitudes.
+   strength: 0.02
+-  scale_mode: residual_norm_fraction
++  scale_mode: recorded_residual_norm_fraction
+   normalize_vector: true
+   apply_to: last_position
+   steer_generated_tokens_only: true
+@@ -40,7 +41,8 @@ steering:
+     vector_key: ambiguity_state__ridge_probe__model_layers_10
+     mode: sigmoid
+     threshold: 0.0
+-    temperature: 1.0
++    # null uses the post-PCA calibrated score scale stored in the vector bundle.
++    temperature: null
+ 
+ batching:
+   batch_size: 2
+diff --git a/configs/steering/sweep_dense_gate_thresholds.yaml b/configs/steering/sweep_dense_gate_thresholds.yaml
+new file mode 100644
+index 0000000000000000000000000000000000000000..90190d674a1033294128fdf8b70a00315e77ed22
+--- /dev/null
++++ b/configs/steering/sweep_dense_gate_thresholds.yaml
+@@ -0,0 +1,17 @@
++experiment_name: ambik_dense_vector_gate_threshold_sweep
++base_config: configs/steering/dense_vector_probe_gated.yaml
++
++sweep:
++  parameter: steering.gate.threshold
++  # Probe scores are normalized by the stored score standard deviation when
++  # sigmoid gating is used. Tune thresholds only on the development split.
++  values: [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0]
++  storage:
++    layout: flat
++    keep_generated_configs: true
++    keep_predictions: true
++    keep_results: true
++    keep_example_metrics: true
++    keep_aggregate_metrics: true
++    keep_category_metrics: true
++    cleanup_tmp_run_dirs: true
+diff --git a/configs/steering/sweep_dense_vector_strengths.yaml b/configs/steering/sweep_dense_vector_strengths.yaml
+new file mode 100644
+index 0000000000000000000000000000000000000000..40e1454e96d6b875cbde6c43b1af0402ccbc3def
+--- /dev/null
++++ b/configs/steering/sweep_dense_vector_strengths.yaml
+@@ -0,0 +1,15 @@
++experiment_name: ambik_dense_vector_probe_gated_strength_sweep
++base_config: configs/steering/dense_vector_probe_gated.yaml
++
++sweep:
++  parameter: steering.strength
++  values: [-0.10, -0.05, -0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03, 0.05, 0.10]
++  storage:
++    layout: flat
++    keep_generated_configs: true
++    keep_predictions: true
++    keep_results: true
++    keep_example_metrics: true
++    keep_aggregate_metrics: true
++    keep_category_metrics: true
++    cleanup_tmp_run_dirs: true
+diff --git a/configs/synthetic/generate_clarification_counterfactuals.yaml b/configs/synthetic/generate_clarification_counterfactuals.yaml
+index 87f5e6df5faa52318be38a269ca53a5a6a94d831..0243639b0cbe534f5320cc190cccd8f56c8ef9fe 100644
+--- a/configs/synthetic/generate_clarification_counterfactuals.yaml
++++ b/configs/synthetic/generate_clarification_counterfactuals.yaml
+@@ -22,6 +22,10 @@ synthetic_corpus:
+   output_path: outputs/synthetic/clarification_counterfactuals.jsonl
+   scenarios_per_topic: 12
+   max_retries: 2
++  strict_validation: true
++  splits:
++    train: 0.70
++    dev: 0.15
+   topics:
+     - cooking
+     - household organization
+diff --git a/docs/ANTHROPIC_ADAPTATION.md b/docs/ANTHROPIC_ADAPTATION.md
+index eab60e99966daa0cd13277d5e4099f96da929440..67820d868c7d1d98024db44c931219098797dc1d 100644
+--- a/docs/ANTHROPIC_ADAPTATION.md
++++ b/docs/ANTHROPIC_ADAPTATION.md
+@@ -1,137 +1,186 @@
+-# Adapting self-generated concept vectors to clarification
++# Adapting Anthropic-style concept vectors to clarification
+ 
+-This branch adds a dense concept-vector route alongside ClarifySAE. It is designed to test the user's hypothesis while avoiding the main confound in a naïve corpus of “texts containing questions”: such a corpus mostly identifies interrogative syntax, punctuation, and dialogue-turn structure.
++## What is being copied—and what is not
+ 
+-## What Anthropic's emotion procedure corresponds to here
++Anthropic's emotion work did **not** search an SAE for a single emotion feature.
++It generated concept-rich text, ran that text through the model, averaged
++residual-stream activations, formed one dense direction per concept and layer,
++removed a neutral nuisance subspace, and tested the direction causally by
++activation addition.
+ 
+-The closest analogue is **not an SAE feature search**. It is:
++The closest clarification analogue in this repository is therefore dense
++residual-vector discovery. The SAE experiment is a later projection question:
++can that dense direction be represented by one feature, or does it require a
++signed set of features?
+ 
+-1. Ask the model under study to generate many labeled examples in which a concept is clearly expressed.
+-2. Run those examples back through the model and pool residual-stream activations.
+-3. Form a dense concept direction by subtracting a comparison-class mean.
+-4. Optionally project out high-variance components estimated from neutral text.
+-5. Add the dense vector to a residual stream and measure causal effects.
++## Why “clarification” must be factorized
+ 
+-For clarification, a single label is insufficient because the behavior is a policy with several separable computations. The corpus generator therefore creates matched counterfactuals for four concepts:
++An emotion can be treated approximately as broad semantic content. Clarification
++is a conditional decision policy involving at least:
+ 
+-- `ambiguity_state`: the prompt lacks a task-relevant variable versus the minimally edited clear prompt;
+-- `ask_policy`: ask the targeted question versus silently guess under the same ambiguous prompt;
+-- `targeted_question`: ask for the gold missing slot versus ask a generic question;
+-- `restraint_on_clear`: answer a clear instruction directly versus ask an unnecessary question.
++1. recognizing that a required variable is not specified;
++2. judging whether the variable matters enough to ask about;
++3. choosing to ask rather than guess;
++4. selecting the particular missing slot;
++5. producing a concise, answerable question;
++6. refraining from asking when the prompt is sufficiently specified;
++7. using the user's answer correctly afterward.
+ 
+-Each example has a `pair_id`, so the recommended estimator is matched-pair difference-in-means rather than a broad unpaired comparison.
++A corpus of texts that merely contain questions will mostly recover question
++marks, wh-words, politeness, formatting, and turn boundaries.
+ 
+-## Commands
++## Corpus emitted by the generator
+ 
+-Generate self-authored, matched scenarios:
++Every accepted scenario creates matched rows for:
++
++- `ambiguity_state`: ambiguous prompt versus minimally edited clear prompt,
++  pooled at the final prompt token;
++- `ask_trajectory`: targeted question versus a silent guess under the exact same
++  ambiguous prompt, pooled over assistant response tokens;
++- `targeted_question`: a slot-specific question versus a generic interrogative;
++- `restraint_on_clear`: direct response versus an unnecessary question on the
++  clear prompt;
++- `neutral_prompt` and `neutral_response`: nuisance corpora for pooling-specific
++  PCA removal.
++
++`ask_trajectory` is deliberately not called a pre-response policy state. Because
++its positive and negative prompts are identical, their final-prompt hidden state
++is identical. The distinction only appears during the assistant continuation.
++Applying that response-derived direction during generation is a causal
++experiment, but it must not be described as discovering a pre-existing prompt
++state without further evidence.
++
++The generator also:
++
++- assigns entire topics to train/dev/test splits;
++- enforces minimal-pair similarity and basic hard-negative checks;
++- rejects explicit meta-labels such as “ambiguity” and “clarification”;
++- emits failure logs for manual audit.
++
++## Extraction
+ 
+ ```bash
+ python -m clarifysae_llama.runners.generate_synthetic_corpus \
+   --config configs/synthetic/generate_clarification_counterfactuals.yaml
+-```
+ 
+-Extract vectors at several layers:
+-
+-```bash
+ python -m clarifysae_llama.runners.extract_concept_vectors \
+   --config configs/concept_vectors/extract_clarification_vectors.yaml
+ ```
+ 
+-Run ambiguity-probe-gated dense steering:
++A benchmark-authored control is also implemented:
+ 
+ ```bash
+-python -m clarifysae_llama.runners.run_eval \
+-  --config configs/steering/dense_vector_probe_gated.yaml
+-```
+-
+-Project a dense vector into a signed sparse set of SAE decoder features:
+-
+-```bash
+-python -m clarifysae_llama.runners.project_concept_vector_to_sae \
+-  --config configs/sae_projection/project_dense_vector_to_sae.yaml
++python -m clarifysae_llama.runners.build_ambik_concept_corpus \
++  --config configs/concept_vectors/build_ambik_concept_corpus.yaml
++python -m clarifysae_llama.runners.extract_concept_vectors \
++  --config configs/concept_vectors/extract_ambik_vectors.yaml
+ ```
+ 
+-The last command emits a CSV of selected features and a YAML steering snippet. This provides a direct test of “one dense vector versus many SAE features.” Negative coefficients are allowed because a dense concept direction generally cannot be represented by only positive activation of one SAE feature.
+-
+-## Recommended experimental matrix
+-
+-Run the following in parallel on the same train/dev/test splits:
+-
+-| Arm | Discovery | Intervention | Main purpose |
+-|---|---|---|---|
+-| A | Existing ClarifyScore + OutputScore | single SAE feature | reproduce current paper |
+-| B | Existing discovery | clustered/multi SAE features | current multi-feature ablation |
+-| C | Self-generated matched corpus | dense paired-difference vector | closest Anthropic analogue |
+-| D | Benchmark matched pairs | dense CAA vector | removes generator-model artifacts |
+-| E | Ridge ambiguity probe + ask-policy vector | conditional dense steering | reduce clear-input false positives |
+-| F | Dense vector projected to SAE | signed multi-feature SAE steering | compare sparse approximation with dense direction |
+-| G | Supervised vector in SAE latent space | SAE-SSV-style intervention | stronger supervised sparse baseline |
+-| H | Low-rank representation fine-tuning | ReFT/LoReFT | learned intervention baseline |
+-| I | Prompt / CLAM / small LoRA | input/post-training baselines | practical upper/lower comparisons |
++The AmbiK builder uses the annotated question as the positive continuation and
++the annotated resolved plan under the ambiguous prompt as the ask-versus-commit
++hard negative. This is useful but not perfectly matched stylistically, so report
++it as a benchmark control rather than the uniquely correct definition.
+ 
+-Do not select the best arm on the final benchmark. Use a development split for layer, strength, threshold, and feature count.
++Three estimators are implemented at each layer:
+ 
+-## Pooling and timing
++- class difference in means;
++- matched-pair difference in means;
++- ridge-probe direction.
+ 
+-Use different token locations for different concepts:
++Neutral principal components are estimated separately for `last_nonpad` and
++`assistant_mean` representations. After projecting a ridge direction away from
++the neutral subspace, its bias and score scale are **recalibrated**; retaining
++the pre-projection bias would produce an invalid gate.
+ 
+-- `ambiguity_state`: final prompt token before the assistant starts;
+-- `ask_policy`: final prompt token and early assistant positions should both be tested;
+-- `targeted_question`: mean over the assistant question span;
+-- `restraint_on_clear`: final prompt token or early response span.
++The vector bundle records:
+ 
+-The synthetic corpus records a recommended pooling mode for each row. The extractor also supports `mean_after_token`, which can imitate the story-level procedure more literally, but it is not necessarily the scientifically appropriate choice for an online decision policy.
++- raw and PCA-cleaned vectors;
++- average residual norm at each extraction layer;
++- calibrated score bias and temperature;
++- train and held-out AUROC, balanced accuracy, means, and margins.
+ 
+-## Conditional steering
++## Steering
+ 
+-A static ask vector is expected to increase questions on both ambiguous and clear prompts. The dense steerer can therefore use a separate `ambiguity_state` ridge-probe vector as a gate:
++### Single-layer gated steering
+ 
+-```yaml
+-steering:
+-  method: dense_vector
+-  vector_key: ask_policy__paired_difference__model_layers_10
+-  gate:
+-    enabled: true
+-    vector_key: ambiguity_state__ridge_probe__model_layers_10
+-    mode: sigmoid
++```bash
++python -m clarifysae_llama.runners.run_eval \
++  --config configs/steering/dense_vector_probe_gated.yaml
+ ```
+ 
+-The gate is computed on the last prefill token and cached for autoregressive generation. This is an experimental mechanism, not a claim that linear gating is optimal.
++The ambiguity probe is evaluated once on the prefill decision state and cached.
++This matters for no-cache decoding: recomputing the gate on every full-sequence
++forward pass would silently turn a prompt decision into a changing token-level
++decision.
+ 
+-## Evaluation that must remain separate
++`recorded_residual_norm_fraction` scales the intervention using the average
++residual norm measured during extraction, closer to Anthropic's convention than
++using each current token's norm.
+ 
+-**When to ask**
++### Multi-layer dense steering
+ 
+-- AUROC/AUPRC of ambiguity probe;
+-- clarification true-positive rate on ambiguous inputs;
+-- unnecessary-question false-positive rate on paired clear inputs;
+-- selective risk/coverage and calibration.
++```bash
++python -m clarifysae_llama.runners.run_eval \
++  --config configs/steering/dense_vector_multilayer.yaml
++```
+ 
+-**What to ask**
++This injects the layer-specific version of the same concept direction over a
++middle-layer band. Begin with unconditional multi-layer steering; independently
++gating every layer can create inconsistent per-layer decisions and should be a
++separate ablation.
+ 
+-- gold-slot alignment;
+-- minimality (one question and one missing variable);
+-- relevance and answerability;
+-- information gain or reduction in valid interpretations;
+-- human judgments of specificity, naturalness, and actionability.
++### Strength and gate sweeps
+ 
+-**End to end**
++```bash
++python -m clarifysae_llama.runners.sweep \
++  --config configs/steering/sweep_dense_vector_strengths.yaml
+ 
+-- task success after the provider/user answers;
+-- repeated-question and role-play artifacts;
+-- fluency/capability regressions;
+-- full strength curves and Pareto frontiers, not only the best point.
++python -m clarifysae_llama.runners.sweep \
++  --config configs/steering/sweep_dense_gate_thresholds.yaml
++```
+ 
+-## Necessary controls
++Select sign, layer, strength, and threshold only on a development split. Report
++complete curves and clear-input false-positive rates.
+ 
+-1. Generate an independent corpus with another writer model, and compare vector cosine and causal effects.
+-2. Include benchmark-authored matched pairs so the result is not circularly defined by the model's own prose.
+-3. Lexically match positive and negative texts; include generic questions as hard negatives.
+-4. Hold out ambiguity categories and domains during vector discovery.
+-5. Repeat across layers, random seeds, SAE checkpoints, and model sizes.
+-6. Test both vector signs. A concept's causal direction can be opposite to the intuitive label depending on pooling and layer.
+-7. Report all tried configurations or use a preregistered development-selection procedure.
++## One feature or many?
+ 
+-## Interpretation caution
++```bash
++python -m clarifysae_llama.runners.project_concept_vector_to_sae \
++  --config configs/sae_projection/project_dense_vector_to_sae.yaml
++```
+ 
+-A dense concept vector is a direction in the residual stream, not evidence for a single localized “clarification neuron.” An SAE projection is an approximation in a learned dictionary. If a 16-feature signed reconstruction works better than every single feature, that supports a distributed representation; it does not prove the SAE features are independently causal or monosemantic.
++The projection runner fits a broad signed SAE decoder basis, then refits nested
++supports of 1, 2, 4, 8, 16, and 32 features. It emits a reconstruction curve and
++one steering YAML per feature count. Negative coefficients are allowed: a dense
++concept direction need not lie in the positive cone of SAE decoder features.
++
++The scientific comparison is:
++
++1. best individual SAE feature;
++2. existing decoder-similarity cluster;
++3. signed dense-to-SAE reconstruction at each `k`;
++4. the original dense direction.
++
++A better multi-feature reconstruction supports a distributed representation; it
++does not establish that the individual SAE features are independently
++monosemantic or causal.
++
++## Required controls
++
++- **Target-self-generated corpus:** closest Anthropic analogue.
++- **Independent writer corpus:** detects circularity and model-specific prose.
++- **Benchmark-authored pairs:** detects synthetic-generator artifacts.
++- **Hard negatives:** guessing, generic questions, needless questions, and
++  question-form-matched controls.
++- **Held-out topics/categories:** prevent topic memorization.
++- **Both signs and all curves:** avoid cherry-picking.
++- **Prompt-side versus response-side positions:** distinguish recognition,
++  decision, and realization.
++- **Clear-input controls:** measure over-asking directly.
++
++## Interpretation boundary
++
++A useful ambiguity probe does not imply that its normal vector is the best
++steering direction. A steerable question trajectory does not imply that the
++model has a single “clarification concept.” Treat detection, causal control,
++question targeting, and downstream task use as separate hypotheses.
+diff --git a/docs/CODE_REVIEW_AND_EXECUTION_PLAN.md b/docs/CODE_REVIEW_AND_EXECUTION_PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..6ce1e183b628b095c9bdaa6e97739797dbfa063c
+--- /dev/null
++++ b/docs/CODE_REVIEW_AND_EXECUTION_PLAN.md
+@@ -0,0 +1,573 @@
++# ClarifySAE: paper strengthening, method adaptation, code review, and execution plan
++
++## Executive verdict
++
++The most promising next paper is **not** simply “ClarifyScore with a better
++vocabulary.” The current results and rebuttal already show that static feature
++steering acts mainly as a **clarification prior**: it can increase questions on
++ambiguous examples, but also increases them on paired clear examples. That is a
++useful negative result because it identifies the missing mechanism: selective
++clarification requires at least a prompt-side decision about whether information
++is needed and a separate response-side mechanism for producing the right
++question.
++
++The recommended project is therefore:
++
++> **Factorized Representation Discovery and Conditional Control of
++> Clarification-Seeking in Language Models**
++
++Run dense, sparse, and learned interventions in parallel, but make the central
++scientific comparison about four separable functions:
++
++1. **ambiguity / missing-variable recognition**;
++2. **ask-versus-commit behavior**;
++3. **selection of the missing slot and question content**;
++4. **restraint on clear inputs and use of the answer afterward**.
++
++The highest-priority experiment is a **prompt-side ambiguity probe used as a
++gate for a response-side dense question trajectory**, compared with the current
++best single SAE feature, a signed multi-feature SAE reconstruction, prompting,
++and CLAM.
++
++## What Anthropic did
++
++Anthropic's emotion study used a dense representation-engineering procedure,
++not an SAE feature search:
++
++1. Define 171 emotion concepts.
++2. Ask the model under study to write 12 stories for each of 100 topics and each
++   emotion, while forbidding the emotion word and direct synonyms.
++3. Feed the stories back through the model.
++4. At every layer, average residual-stream activations over story positions from
++   token 50 onward.
++5. For each emotion, subtract the average activation over other emotions.
++6. Compute principal components on emotionally neutral transcripts and project
++   out enough components to explain 50% of neutral variance.
++7. Validate the direction on implicit and controlled prompts.
++8. Add the direction to residual activations and measure causal changes in text,
++   preferences, and alignment evaluations.
++
++Most headline plots use a mid-late layer around two-thirds through the model.
++Some preference experiments apply a layer-specific direction across the same
++middle-layer band, with strength expressed as a fraction of average residual
++norm.
++
++### One feature or many?
++
++Anthropic generally intervenes with **one dense emotion direction at a time** in
++an experiment, but that direction:
++
++- has one coordinate for every hidden dimension;
++- is estimated separately at each layer;
++- can be applied over multiple layers;
++- is not one neuron and is not one SAE latent.
++
++They construct many different emotion vectors and compare them, but they are not
++jointly turning on a set of SAE features to represent one emotion. The correct
++analogue for your question is to first learn a dense clarification direction,
++then test whether an SAE can approximate it with `k = 1, 2, 4, 8, 16, 32`
++signed decoder directions.
++
++## Why clarification is not an emotion-like scalar concept
++
++“Anger” can often be detected from broad semantic content. Clarification is a
++relation among the user's request, the environment, the agent's action space,
++and the cost of a wrong interpretation. It is also conditional: the same phrase
++can be clear in one context and unclear in another.
++
++A fixed “question” direction is therefore likely to mix:
++
++- interrogative syntax and punctuation;
++- dialogue-turn structure;
++- epistemic uncertainty;
++- politeness and requests for detail;
++- recognition of multiple interpretations;
++- risk aversion;
++- a general tendency to defer or refuse;
++- the actual target slot that must be queried.
++
++The model may linearly encode recognition without automatically acting on it.
++Recent work explicitly reports a recognition–behavior gap: models can classify a
++question as ambiguous when asked, yet still answer directly in normal QA. This
++makes a detector-plus-policy decomposition especially well motivated.
++
++## Factorized concepts and datasets
++
++### 1. `ambiguity_state`
++
++Positive: an instruction lacks exactly one consequential variable. Negative:
++the minimally edited instruction fills it. Pool at the final prompt token.
++
++This is the best candidate for a detector or gate. It should be evaluated as a
++classifier before any steering claim is made.
++
++### 2. `ask_trajectory`
++
++Positive and negative examples use the exact same ambiguous prompt. The positive
++assistant continuation asks the targeted question; the negative continuation
++silently commits to a plausible interpretation. Pool over assistant tokens.
++
++This is intentionally called a **trajectory**, not a prompt-side policy state.
++Before the response begins, both examples have identical activations. Applying
++this direction during generation tests whether a response-derived trajectory is
++causally useful; it does not prove that it was already represented at the final
++prompt token.
++
++### 3. `targeted_question`
++
++Positive: question about the annotated missing slot. Negative: grammatical but
++generic question that does not identify the slot. This controls for the mere
++presence of interrogative syntax.
++
++### 4. `restraint_on_clear`
++
++Positive: direct useful response on a clear prompt. Negative: needless question
++on that same prompt. This can be used as a separate direction or a negative
++regularizer.
++
++### 5. Answer integration
++
++After the user supplies the missing information, evaluate whether the model
++updates the plan correctly. This should eventually have a separate representation
++study: “uses provided disambiguating evidence” versus “continues with the prior
++assumption.” A model that asks but cannot exploit the answer does not solve the
++end-to-end task.
++
++## Corpora to build
++
++Use three sources, not one:
++
++1. **Target-self-generated matched corpus.** Closest Anthropic analogue; reveals
++   what the target model itself associates with each concept.
++2. **Independent-writer matched corpus.** Same validated scenarios for all target
++   models; tests whether the direction depends on model-specific prose.
++3. **Benchmark-authored corpus.** AmbiK paired prompts, annotated questions, and
++   plans; tests synthetic-data circularity.
++
++Hold out entire topics and ambiguity categories. Do not randomly split near-
++duplicate paraphrases across train and test.
++
++## Discovery estimators
++
++Run all at the same layers and on the same examples.
++
++### Dense centroid difference
++
++`mean(positive) - mean(negative)`. This is the closest Anthropic analogue.
++
++### Matched-pair difference
++
++Average `h_positive - h_negative` within each scenario. This cancels much of the
++topic and wording variation and is the default recommendation.
++
++### Linear probe
++
++Fit ridge/logistic classification on prompt-side `ambiguity_state`. Use its
++score for detection/gating. Separately test the normal vector for steering, but
++do not infer causality from high AUROC.
++
++### Neutral and nuisance subspace removal
++
++Estimate neutral PCs separately for prompt-final and assistant-span pooling.
++Also test projection away from explicitly constructed nuisance directions:
++
++- question mark / wh-word form;
++- dialogue boundary / `Assistant:` formatting;
++- verbosity and politeness;
++- generic uncertainty;
++- refusal and deferral.
++
++Neutral projection should be an ablation, not a mandatory truth: a high-variance
++component may contain real task state.
++
++### SAE-based discovery
++
++Keep the current ClarifyScore + OutputScore arm. Add:
++
++- outcome correlation with ambiguity labels and slot-alignment outcomes;
++- sparse supervised subspace selection (SAE-SSV style);
++- signed dense-to-SAE reconstruction;
++- side-effect screening using decoder geometry, co-activation, and direct-logit
++  footprint when feasible.
++
++## Intervention arms
++
++### A. Current ClarifySAE single feature
++
++Reproduce the selected feature and full strength curve. This is the anchor.
++
++### B. Current clustered/multi-feature SAE steering
++
++Use existing decoder-similarity clusters, but allow signed weights and report
++all clusters. Avoid calling a cluster “the clarification mechanism” based only
++on one selected maximum.
++
++### C. Dense self-generated matched vector
++
++Inject a layer-specific `ask_trajectory` or `targeted_question` vector. Sweep
++both signs and small strengths scaled to recorded average residual norm.
++
++### D. Dense benchmark vector
++
++Repeat with AmbiK-derived pairs. Compare vector cosine and causal effect to the
++self-generated direction.
++
++### E. Probe-gated dense steering — highest priority
++
++Compute `ambiguity_state` once at the final prompt token. Use hard or sigmoid
++gating to apply the response-side vector only when the score is high. Tune the
++threshold on development data and report a risk/coverage or asking/over-asking
++frontier.
++
++### F. Multi-layer dense steering
++
++Use the layer-specific direction across a middle-layer band. This is closer to
++some Anthropic experiments. Compare against the best single layer at equal total
++intervention norm.
++
++### G. Dense-to-SAE projection
++
++Evaluate nested signed supports of 1–32 features. Compare reconstruction cosine
++with causal effect. Good reconstruction does not guarantee good steering, so
++both are required.
++
++### H. SAE-SSV
++
++Train a linear classifier in SAE latent space, select a small task-relevant
++subspace, and learn a supervised direction within it. This tests whether SAEs
++need supervised selection rather than lexical retrieval.
++
++### I. ReFT-r1 / LoReFT
++
++Learn a rank-one or low-rank hidden-state intervention. AxBench found simple
++representation baselines and rank-one ReFT much stronger than standard SAE
++steering in its tested settings. This should be a serious baseline, not an
++appendix afterthought.
++
++### J. Prompt, CLAM, and small LoRA
++
++These establish practical performance. A mechanistic method need not win every
++metric, but it must clarify its value: training-free control, monitoring,
++interpretability, low online overhead, or transfer.
++
++### K. Candidate generation and selection
++
++A non-steering approach may ultimately be best. Generate a direct answer/plan
++and a clarification candidate, then choose using:
++
++- calibrated ambiguity probability;
++- expected information gain or reduction in valid interpretations;
++- predicted action risk/cost;
++- slot alignment and answerability;
++- a budget on interaction turns.
++
++This treats clarification as decision-making rather than style control. It can
++be implemented with a separate detector and reranker, and provides a strong
++systems baseline even if the main paper remains mechanistic.
++
++## Evaluation
++
++### Detection / when to ask
++
++- AUROC and AUPRC;
++- balanced accuracy and calibration error;
++- clarification rate on ambiguous prompts;
++- false-positive question rate on paired clear prompts;
++- risk–coverage and asking–over-asking curves;
++- category results for preference, commonsense, and safety ambiguity.
++
++### Question quality / what to ask
++
++- gold-slot alignment;
++- minimality: one question for one missing variable;
++- relevance, answerability, specificity, and actionability;
++- semantic information gain;
++- repetition, unnatural wording, and role-play artifacts;
++- blinded human comparison on a preregistered sample.
++
++### End to end
++
++- task success after receiving an answer;
++- correct use of the answer;
++- turns, tokens, and latency;
++- safety cost of under-asking;
++- usability cost of over-asking;
++- general-capability and fluency degradation.
++
++### Generalization
++
++Use final held-out evaluation on:
++
++- full paired AmbiK test set;
++- ClarQ-LLM task types not used for discovery;
++- QuestBench, especially Planning-Q and Logic-Q;
++- AR-Bench interactive tasks;
++- KnowNo or other embodied uncertainty tasks;
++- at least one open-domain ambiguity benchmark;
++- newer instruction-tuned models, with frontier-model behavior measured rather
++  than assumed from older citations.
++
++## Statistical protocol
++
++1. Split discovery, hyperparameter selection, and final evaluation.
++2. Select layer, direction, strength, threshold, and `k` only on development.
++3. Report the whole sweep and Pareto frontier.
++4. Use paired confidence intervals and exact paired tests on fixed examples.
++5. Correct broad layer/feature/strength sweeps for multiple comparisons.
++6. Use multiple decoding seeds when sampling.
++7. Bootstrap at the source-example level, not the individual generated token or
++   duplicated pair-row level.
++8. Test stability across writer model, corpus seed, target model, layer, model
++   size, and SAE checkpoint.
++9. Distinguish confirmatory final-test results from exploratory sweeps.
++
++## Paper changes
++
++### Reframe the current result honestly
++
++The rebuttal's unambiguous control should move into the main paper. State that
++ClarifySAE is a controllable clarification prior, not an ambiguity detector. The
++new work asks whether factorized representations and conditional control can
++turn that prior into selective behavior.
++
++### Strengthen the novelty claim
++
++The current combination of ClarifyScore, unchanged OutputScore, and standard SAE
++activation addition is vulnerable to the “incremental novelty” criticism. A
++stronger contribution is a controlled study of:
++
++- lexical SAE retrieval versus matched self-generated representation discovery;
++- recognition versus action versus question targeting;
++- unconditional versus gated interventions;
++- one SAE feature versus signed sparse subspaces versus dense/learned directions.
++
++### Expand feature analysis
++
++For every selected direction/feature set, show:
++
++- top activating examples on discovery and held-out corpora;
++- activation by token position and ambiguity category;
++- decoder/logit projections;
++- nuisance correlations;
++- causal effect by prompt class;
++- collateral behavior changes;
++- cross-model representational similarity, without assuming feature IDs align.
++
++### Report cost carefully
++
++The rebuttal estimates very large one-time ClarifyScore costs for Gemma: about
++63.43 GPU-hours for 2B and 175.72 GPU-hours for 9B on a V100, versus tiny
++OutputScore runs. Dense matched-vector extraction can be much cheaper and should
++be benchmarked directly, including corpus-generation tokens, extraction GPU
++hours, memory, and online latency.
++
++### Claims that would be defensible if supported
++
++A strong target claim is:
++
++> Clarification-seeking is represented as a partially distributed and
++> factorized policy. Separating ambiguity recognition from question-generation
++> control reduces unnecessary questions, and matched contrastive directions
++> provide a stronger causal intervention signal than lexical SAE retrieval
++> alone.
++
++Do not claim this before the held-out conditional experiments succeed.
++
++## Code review of the uploaded starting repository
++
++### Repository-copy inconsistency
++
++The starting repository described itself as a compact curated copy and omitted
++historical results, visualization code, old configurations, scripts, a patch,
++and generated packaging metadata. It was therefore **not** a literal copy of the
++previous repository plus new scripts. This is documented clearly now, and a
++source-complete overlay archive is produced separately.
++
++The `SOURCE.md` names a Git commit, but the uploaded archive contains no `.git`
++history, so that commit cannot be independently verified from the archive alone.
++
++### Critical issues found and fixed
++
++1. **Neutral PCA could never run.** The extractor filtered to target concepts
++   before locating neutral rows, and the generator emitted none. Fixed by
++   retaining pooling-specific neutral concepts and generating `neutral_prompt`
++   and `neutral_response` rows.
++2. **Ridge gates were miscalibrated after PCA.** The direction was projected and
++   renormalized while retaining the old bias and score scale. Fixed by
++   recalibrating threshold, means, and temperature after projection.
++3. **Gate caching was wrong for no-cache decoding.** It recomputed whenever
++   sequence length exceeded one. Fixed to compute once per generation reset.
++4. **Stored probe temperature was ignored.** A configuration default of `1.0`
++   always overrode the stored scale. `null` now uses calibrated bundle metadata.
++5. **Anthropic norm scaling was not represented.** Added scaling by recorded
++   average residual norm.
++6. **Only single-layer dense steering existed.** Added a multi-layer wrapper and
++   example configuration using layer-specific vectors.
++7. **`ask_policy` was semantically overstated.** Renamed to `ask_trajectory` and
++   documented why identical prompts cannot produce different prompt-final
++   states.
++8. **Assistant-span boundary handling was fragile.** Added exact offset mapping
++   for fast tokenizers, a safer fallback, and a hard error when the response is
++   truncated.
++9. **Synthetic validation was too weak.** Added forbidden-label checks,
++   question-form checks, minimal-pair similarity, basic slot overlap, hard-
++   negative leakage checks, topic-level splits, and failure logs.
++10. **No held-out diagnostics.** Extraction now records train and development
++    AUROC, balanced accuracy, score margins, and average residual norm.
++11. **Dense-to-SAE tested only one `k`.** It now emits nested 1–32 feature
++    reconstructions and steering snippets.
++12. **No benchmark corpus builder.** Added a paired AmbiK concept-corpus runner.
++13. **Direct `pytest` depended on editable installation.** Added pytest source
++    path configuration.
++14. **No systematic prerequisite check.** Added `scripts/preflight_experiments.py`.
++
++### Verification performed
++
++- all 44 YAML files parse;
++- Python `compileall` succeeds for source, scripts, and tests;
++- 10 unit tests pass;
++- preflight finds no stale `ask_policy` configuration references and no YAML
++  errors;
++- the environment used for review has CPU PyTorch but no CUDA and lacks the
++  heavy optional packages/checkpoints, so no model or SAE end-to-end experiment
++  was run.
++
++The preflight currently reports missing raw datasets and generated artifacts, as
++expected for an archive that intentionally does not bundle AmbiK, ClarQ-LLM,
++processed LMSYS activation data, generated synthetic text, vector bundles, or
++model/SAE checkpoints.
++
++## Step-by-step execution
++
++### Step 0 — environment and data
++
++```bash
++python -m venv .venv
++source .venv/bin/activate
++pip install -U pip
++pip install -e .
++python scripts/preflight_experiments.py --output outputs/preflight_report.json
++pytest -q
++```
++
++Place AmbiK and ClarQ-LLM at the paths shown in `README.md`. Build the LMSYS
++processed parquet only if reproducing ClarifyScore.
++
++### Step 1 — reproduce anchors
++
++Run unsteered, prompt, CLAM, best current single feature, and best current
++multi-feature configuration on the same development subset. Confirm the paper's
++metrics and over-asking behavior before adding new methods.
++
++### Step 2 — generate matched synthetic corpus
++
++```bash
++python -m clarifysae_llama.runners.generate_synthetic_corpus \
++  --config configs/synthetic/generate_clarification_counterfactuals.yaml
++```
++
++Manually audit at least 100 scenarios. Reject examples with more than one
++missing slot, non-consequential ambiguity, invalid generic negatives, or questions
++whose answer is already in context. Save an immutable corpus version and hash.
++
++Repeat with an independent writer model.
++
++### Step 3 — build benchmark-authored corpus
++
++```bash
++python -m clarifysae_llama.runners.build_ambik_concept_corpus \
++  --config configs/concept_vectors/build_ambik_concept_corpus.yaml
++```
++
++Inspect the benchmark hard negative: AmbiK's resolved plan is placed after the
++ambiguous prompt as an ask-versus-commit continuation. It is useful but may have
++length/style confounds; measure and optionally length-match it.
++
++### Step 4 — extract vectors
++
++```bash
++python -m clarifysae_llama.runners.extract_concept_vectors \
++  --config configs/concept_vectors/extract_clarification_vectors.yaml
++
++python -m clarifysae_llama.runners.extract_concept_vectors \
++  --config configs/concept_vectors/extract_ambik_vectors.yaml
++```
++
++Inspect the CSV diagnostics. Stop and redesign the corpus if held-out ambiguity
++AUROC is weak, if the sign reverses unpredictably, or if top activating examples
++are mostly formatting/question punctuation.
++
++### Step 5 — unconditional dense causal test
++
++Use the gated config with the gate disabled, or the multi-layer config. Sweep
++both signs and strengths. The first question is whether the direction causally
++changes slot-aligned clarification more than it changes generic question rate.
++
++### Step 6 — gated selective steering
++
++```bash
++python -m clarifysae_llama.runners.sweep \
++  --config configs/steering/sweep_dense_vector_strengths.yaml
++
++python -m clarifysae_llama.runners.sweep \
++  --config configs/steering/sweep_dense_gate_thresholds.yaml
++```
++
++Choose a development operating point based on a utility function that penalizes
++clear-input questions and rewards correct slot acquisition, not only raw
++clarification rate.
++
++### Step 7 — one versus many SAE features
++
++```bash
++python -m clarifysae_llama.runners.project_concept_vector_to_sae \
++  --config configs/sae_projection/project_dense_vector_to_sae.yaml
++```
++
++Run every emitted `k` snippet. Plot causal effect and collateral degradation
++against reconstruction cosine and `k`. The best reconstruction may not be the
++best intervention.
++
++### Step 8 — learned representation baselines
++
++Implement/run SAE-SSV and ReFT-r1/LoReFT on exactly the same train/dev splits.
++Also include a small LoRA and explicit selective-clarification prompt. Match
++training examples and report parameter count and compute.
++
++### Step 9 — frozen final test
++
++Freeze the complete selection procedure and evaluate once on held-out AmbiK
++pairs, held-out ClarQ task types, and at least one external benchmark. Use paired
++statistics and publish all selected hyperparameters.
++
++## Go/no-go criteria
++
++Continue toward the factorized-control paper if at least one conditional method:
++
++- improves slot-aligned question rate on ambiguous examples;
++- materially reduces over-asking versus unconditional steering;
++- improves end-to-end task success after the answer;
++- transfers to held-out topics or a second benchmark;
++- does not create severe repetition, refusal, or fluency regressions.
++
++A scientifically valuable negative result is also possible: ambiguity recognition
++may be linearly decodable while fixed additive directions fail to implement the
++conditional action. In that case, the paper should emphasize the recognition–
++control gap and show why learned or decision-level interventions outperform SAE
++feature activation.
++
++## Primary references for the new study
++
++- Sofroniew et al. (2026), *Emotion Concepts and their Function in a Large
++  Language Model*.
++- Wu et al. (2025), *AxBench: Steering LLMs? Even Simple Baselines Outperform
++  Sparse Autoencoders*.
++- Arad et al. (2025), *SAEs Are Good for Steering—If You Select the Right
++  Features*.
++- He et al. (2025), *SAE-SSV*.
++- Panickssery et al. (2023), *Contrastive Activation Addition*.
++- Wu et al. (2024), *ReFT*.
++- Li et al. (2025), *QuestBench*.
++- Zhou et al. (2025), *AR-Bench*.
++- Su and Cardie (2026), *Knowing but Not Showing*.
++- Kuhn et al. (2022), *CLAM*.
+diff --git a/docs/RESEARCH_PLAN.md b/docs/RESEARCH_PLAN.md
+index 65fb9e60278c657251cbd179776e456848e57152..a1bcf7c3eb618c9abfa2166e9735eff62ef9fa3c 100644
+--- a/docs/RESEARCH_PLAN.md
++++ b/docs/RESEARCH_PLAN.md
+@@ -7,7 +7,7 @@ The self-generated-text hypothesis is worth testing, but the most informative ve
+ The recommended design is a **factorized, matched-counterfactual representation study**:
+ 
+ 1. extract a representation of **underspecification / missing required information** from minimally different ambiguous and clear prompts;
+-2. extract an **ask-versus-guess policy** vector from the same ambiguous prompt paired with a targeted question or a silent guess;
++2. extract an **ask-versus-guess response trajectory** vector from the same ambiguous prompt paired with a targeted question or a silent guess;
+ 3. extract a **target-slot question quality** vector from targeted versus generic questions;
+ 4. extract a **restraint-on-clear-inputs** vector from direct answers versus unnecessary questions;
+ 5. use the first representation as a detector/gate and the second or third as the steering intervention.
+@@ -89,7 +89,7 @@ Generate topic- and style-matched neutral/direct transcripts, find principal com
+ Do not use one pooling strategy for every concept.
+ 
+ - **Ambiguity state:** final prompt token before the assistant turn.
+-- **Ask/guess policy:** final prompt token and first few assistant positions.
++- **Ask/guess trajectory:** final prompt token and first few assistant positions.
+ - **Question content:** mean over the assistant question span.
+ - **Story-style Anthropic replication:** mean over later tokens, e.g. after token 50, as a separate ablation.
+ 
+@@ -115,7 +115,7 @@ Use AmbiK's paired ambiguous/unambiguous prompts and targeted/guessing responses
+ 
+ ### Arm E — Probe-gated dense steering
+ 
+-Compute an ambiguity-state score at the final prompt token. Apply ask-policy steering only when the score exceeds a development-calibrated threshold, or scale continuously with a sigmoid. This is the highest-priority intervention.
++Compute an ambiguity-state score at the final prompt token. Apply ask-trajectory steering only when the score exceeds a development-calibrated threshold, or scale continuously with a sigmoid. This is the highest-priority intervention.
+ 
+ ### Arm F — Dense-to-SAE projection
+ 
+@@ -184,7 +184,7 @@ ClarifySAE becomes one method within a controlled comparison of dense, sparse, a
+ Suggested research questions:
+ 
+ 1. Does a model-self-generated matched corpus identify more causal clarification representations than lexical feature retrieval?
+-2. Are clarification state, ask policy, and question content linearly separable and causally dissociable?
++2. Are clarification state, ask trajectory, and question content linearly separable and causally dissociable?
+ 3. Does conditional gating reduce unnecessary questions while preserving gains on ambiguous inputs?
+ 4. Are dense directions better represented by one SAE feature or a signed multi-feature subspace?
+ 5. Which intervention family transfers across datasets, ambiguity types, model families, and scales?
+@@ -197,20 +197,20 @@ The main scientific claim should be conditional on results. A defensible target
+ 
+ - self-generated matched-counterfactual corpus generator;
+ - dense difference-in-means, paired-difference, ridge-probe, and neutral-PCA utilities;
+-- multi-layer residual activation extractor with concept-specific pooling;
+-- dense residual-vector steering with absolute or residual-norm scaling;
+-- ambiguity-probe hard/sigmoid gating cached from the prefill decision state;
+-- dense-to-SAE signed sparse projection;
++- multi-layer residual activation extractor with concept-specific pooling, held-out diagnostics, and pooling-specific neutral PCA;
++- dense residual-vector steering with absolute, current-residual, or recorded-average-residual scaling;
++- post-PCA-recalibrated ambiguity-probe hard/sigmoid gating cached once from the prefill decision state;
++- dense-to-SAE nested signed sparse projection for 1–32 features;
+ - example YAML configurations;
+ - tests for vector extraction and gated steering;
+ - a detailed usage guide.
+ 
+-The implementation has been compiled and its six unit tests pass. No GPU-scale corpus generation or benchmark run was performed in this environment, so empirical claims remain to be tested.
++The implementation has been compiled and its ten unit tests pass. No GPU-scale corpus generation or benchmark run was performed in this environment, so empirical claims remain to be tested.
+ 
+ ## Priority order under limited compute
+ 
+ 1. Build 200–500 matched scenarios and extract dense paired vectors at 4–6 layers.
+-2. Evaluate ambiguity probe and unconditional/gated ask-policy steering on paired AmbiK.
++2. Evaluate ambiguity probe and unconditional/gated ask-trajectory steering on paired AmbiK.
+ 3. Compare against existing best single SAE feature, best cluster, explicit prompt, and oracle CLAM.
+ 4. Run dense-to-SAE projections at feature counts 1–32.
+ 5. Transfer the selected development configuration to held-out AmbiK categories and QuestBench.
+diff --git a/pyproject.toml b/pyproject.toml
+index 1333599a48bebef26855a38d4d24b6c7916e1ea9..0a90152f96e5a0604b9437c651f1d6e6ddd35a6b 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -27,3 +27,7 @@ package-dir = {"" = "src"}
+ 
+ [tool.setuptools.packages.find]
+ where = ["src"]
++
++[tool.pytest.ini_options]
++pythonpath = ["src"]
++testpaths = ["tests"]
+diff --git a/scripts/preflight_experiments.py b/scripts/preflight_experiments.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..3061172f1131924e54240675952a4392e4d201de
+--- /dev/null
++++ b/scripts/preflight_experiments.py
+@@ -0,0 +1,109 @@
++#!/usr/bin/env python3
++from __future__ import annotations
++
++"""Static preflight checks for the ClarifySAE experiment repository."""
++
++import argparse
++import importlib.util
++import json
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++
++OPTIONAL_IMPORTS = [
++    "torch", "transformers", "accelerate", "datasets", "sentence_transformers",
++    "sparsify", "sae_lens", "dictionary_learning",
++]
++
++
++def _walk(obj: Any, prefix: str = ""):
++    if isinstance(obj, dict):
++        for key, value in obj.items():
++            path = f"{prefix}.{key}" if prefix else str(key)
++            yield path, value
++            yield from _walk(value, path)
++    elif isinstance(obj, list):
++        for idx, value in enumerate(obj):
++            path = f"{prefix}[{idx}]"
++            yield path, value
++            yield from _walk(value, path)
++
++
++def _is_local_input_key(key: str) -> bool:
++    leaf = key.rsplit(".", 1)[-1]
++    return leaf in {
++        "path", "dataset_path", "vector_path", "base_config",
++    }
++
++
++def run(root: Path) -> dict[str, Any]:
++    yaml_files = sorted(root.glob("configs/**/*.yaml"))
++    parse_errors: list[dict[str, str]] = []
++    missing_inputs: list[dict[str, str]] = []
++    generated_prerequisites: list[dict[str, str]] = []
++    stale_terms: list[dict[str, str]] = []
++
++    for path in yaml_files:
++        try:
++            cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
++        except Exception as exc:
++            parse_errors.append({"config": str(path.relative_to(root)), "error": repr(exc)})
++            continue
++        for key, value in _walk(cfg):
++            if isinstance(value, str) and "ask_policy" in value:
++                stale_terms.append({"config": str(path.relative_to(root)), "key": key, "value": value})
++            if not isinstance(value, str) or not _is_local_input_key(key):
++                continue
++            if value.startswith(("http://", "https://")):
++                continue
++            candidate = root / value
++            if candidate.exists():
++                continue
++            record = {"config": str(path.relative_to(root)), "key": key, "path": value}
++            if value.startswith("outputs/"):
++                generated_prerequisites.append(record)
++            elif value in {"null", "None", ""}:
++                continue
++            else:
++                missing_inputs.append(record)
++
++    imports = {
++        name: bool(importlib.util.find_spec(name)) for name in OPTIONAL_IMPORTS
++    }
++    cuda = {"torch_available": imports.get("torch", False), "cuda_available": False, "device_count": 0}
++    if imports.get("torch"):
++        import torch
++        cuda.update({
++            "cuda_available": bool(torch.cuda.is_available()),
++            "device_count": int(torch.cuda.device_count()),
++        })
++
++    return {
++        "root": str(root),
++        "yaml_files": len(yaml_files),
++        "yaml_parse_errors": parse_errors,
++        "missing_local_inputs": missing_inputs,
++        "generated_prerequisites_not_yet_present": generated_prerequisites,
++        "stale_ask_policy_references": stale_terms,
++        "imports": imports,
++        "runtime": cuda,
++        "status": "ok" if not parse_errors and not stale_terms else "needs_attention",
++    }
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--root", default=".")
++    parser.add_argument("--output")
++    args = parser.parse_args()
++    report = run(Path(args.root).resolve())
++    text = json.dumps(report, indent=2)
++    if args.output:
++        Path(args.output).write_text(text + "\n", encoding="utf-8")
++    print(text)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/src/clarifysae_llama/backends/steered_hf_backend.py b/src/clarifysae_llama/backends/steered_hf_backend.py
+index f14fe5d34771add8e0eda65c0b2ec7ca76621786..b71ae82806cd39dc2a5a5d4fc1c089008f742119 100644
+--- a/src/clarifysae_llama/backends/steered_hf_backend.py
++++ b/src/clarifysae_llama/backends/steered_hf_backend.py
+@@ -2,7 +2,11 @@ from __future__ import annotations
+ 
+ from clarifysae_llama.backends.hf_backend import HFCausalBackend
+ from clarifysae_llama.steering.config import SteeringConfig
+-from clarifysae_llama.steering.dense_vector_steerer import DenseVectorConfig, DenseVectorSteerer
++from clarifysae_llama.steering.dense_vector_steerer import (
++    DenseVectorConfig,
++    DenseVectorSteerer,
++    MultiLayerDenseVectorSteerer,
++)
+ from clarifysae_llama.steering.sparsify_steerer import SparsifySteerer
+ 
+ 
+@@ -17,6 +21,7 @@ class SteeredHFCausalBackend(HFCausalBackend):
+ 
+         if method in {"dense", "dense_vector", "concept_vector"}:
+             gate_cfg = steering_cfg.get("gate", {})
++            temperature = gate_cfg.get("temperature")
+             self.steering = DenseVectorSteerer(
+                 model=self.model,
+                 model_device=model_device,
+@@ -36,10 +41,45 @@ class SteeredHFCausalBackend(HFCausalBackend):
+                     gate_vector_path=gate_cfg.get("vector_path"),
+                     gate_vector_key=gate_cfg.get("vector_key"),
+                     gate_threshold=float(gate_cfg.get("threshold", 0.0)),
+-                    gate_temperature=float(gate_cfg.get("temperature", 1.0)),
++                    gate_temperature=None if temperature is None else float(temperature),
+                     gate_mode=gate_cfg.get("mode", "hard"),
+                 ),
+             )
++        elif method in {"dense_vector_multi", "dense_multi", "concept_vector_multi"}:
++            common_gate = steering_cfg.get("gate", {})
++            layer_configs = []
++            for layer in steering_cfg.get("layers", []):
++                gate_cfg = layer.get("gate", common_gate)
++                temperature = gate_cfg.get("temperature")
++                layer_configs.append(DenseVectorConfig(
++                    vector_path=layer.get("vector_path", steering_cfg["vector_path"]),
++                    vector_key=layer["vector_key"],
++                    hookpoint=layer["hookpoint"],
++                    module_path=layer.get("module_path"),
++                    strength=float(layer.get("strength", steering_cfg["strength"])),
++                    apply_to=layer.get("apply_to", steering_cfg.get("apply_to", "last_position")),
++                    steer_generated_tokens_only=bool(layer.get(
++                        "steer_generated_tokens_only",
++                        steering_cfg.get("steer_generated_tokens_only", True),
++                    )),
++                    normalize_vector=bool(layer.get(
++                        "normalize_vector", steering_cfg.get("normalize_vector", True)
++                    )),
++                    scale_mode=layer.get("scale_mode", steering_cfg.get("scale_mode", "absolute")),
++                    norm_cap=layer.get("norm_cap", steering_cfg.get("norm_cap")),
++                    gate_enabled=bool(gate_cfg.get("enabled", False)),
++                    gate_vector_path=gate_cfg.get("vector_path"),
++                    gate_vector_key=gate_cfg.get("vector_key"),
++                    gate_threshold=float(gate_cfg.get("threshold", 0.0)),
++                    gate_temperature=None if temperature is None else float(temperature),
++                    gate_mode=gate_cfg.get("mode", "hard"),
++                ))
++            self.steering = MultiLayerDenseVectorSteerer(
++                model=self.model,
++                model_device=model_device,
++                dtype=self.dtype,
++                configs=layer_configs,
++            )
+         elif method in {"sae", "sparse", "custom"}:
+             self.steering = SparsifySteerer(
+                 model=self.model,
+@@ -69,7 +109,7 @@ class SteeredHFCausalBackend(HFCausalBackend):
+             )
+         else:
+             raise ValueError(
+-                f"Unsupported steering.method={method!r}. Expected 'sae' or 'dense_vector'."
++                f"Unsupported steering.method={method!r}. Expected 'sae', 'dense_vector', or 'dense_vector_multi'."
+             )
+ 
+     def generate(self, prompt: str) -> str:
+diff --git a/src/clarifysae_llama/discovery/concept_vectors.py b/src/clarifysae_llama/discovery/concept_vectors.py
+index ee9b923d6539ec75d60a91cb467cc63d751da534..39d2005a0c61c49afabd99abe52d7957dfb0603e 100644
+--- a/src/clarifysae_llama/discovery/concept_vectors.py
++++ b/src/clarifysae_llama/discovery/concept_vectors.py
+@@ -172,6 +172,79 @@ def fit_ridge_probe(
+     )
+ 
+ 
++
++def calibrate_probe_direction(
++    direction: torch.Tensor,
++    positive: torch.Tensor,
++    negative: torch.Tensor,
++    *,
++    normalize_direction: bool = True,
++) -> ProbeResult:
++    """Calibrate a fixed linear direction as a binary probe.
++
++    This is useful after transforming a fitted probe direction, for example by
++    projecting neutral principal components out of it.  The decision threshold
++    and score scale must be recomputed in the transformed coordinate system;
++    reusing the pre-projection bias would silently miscalibrate gating.
++    """
++
++    positive = _as_float_matrix(positive, "positive")
++    negative = _as_float_matrix(negative, "negative")
++    direction = direction.detach().to(dtype=torch.float32).flatten()
++    if positive.shape[1] != negative.shape[1] or positive.shape[1] != direction.numel():
++        raise ValueError("direction, positive, and negative must share the same hidden dimension")
++    if float(direction.norm()) <= 0:
++        raise ValueError("direction must have non-zero norm")
++
++    if normalize_direction:
++        direction = l2_normalize(direction)
++    raw_pos = positive @ direction
++    raw_neg = negative @ direction
++    threshold = 0.5 * (float(raw_pos.mean()) + float(raw_neg.mean()))
++    bias = -threshold
++    pos_scores = raw_pos + bias
++    neg_scores = raw_neg + bias
++    all_scores = torch.cat([pos_scores, neg_scores], dim=0)
++    return ProbeResult(
++        direction=direction,
++        bias=float(bias),
++        score_mean_positive=float(pos_scores.mean()),
++        score_mean_negative=float(neg_scores.mean()),
++        score_std=float(all_scores.std(unbiased=False).clamp_min(1e-8)),
++    )
++
++
++def binary_score_diagnostics(
++    direction: torch.Tensor,
++    bias: float,
++    positive: torch.Tensor,
++    negative: torch.Tensor,
++) -> dict[str, float]:
++    """Return dependency-free diagnostics for a fixed binary linear score."""
++
++    positive = _as_float_matrix(positive, "positive")
++    negative = _as_float_matrix(negative, "negative")
++    direction = direction.detach().to(dtype=torch.float32).flatten()
++    if positive.shape[1] != negative.shape[1] or positive.shape[1] != direction.numel():
++        raise ValueError("direction, positive, and negative must share the same hidden dimension")
++
++    pos_scores = positive @ direction + float(bias)
++    neg_scores = negative @ direction + float(bias)
++    # Pairwise definition of AUROC, including half credit for ties. This avoids
++    # a scikit-learn dependency and is exact for the small discovery corpora.
++    comparisons = pos_scores[:, None] - neg_scores[None, :]
++    auroc = ((comparisons > 0).float() + 0.5 * (comparisons == 0).float()).mean()
++    tpr = (pos_scores > 0).float().mean()
++    tnr = (neg_scores <= 0).float().mean()
++    return {
++        "auroc": float(auroc),
++        "balanced_accuracy": float(0.5 * (tpr + tnr)),
++        "positive_mean": float(pos_scores.mean()),
++        "negative_mean": float(neg_scores.mean()),
++        "margin": float(pos_scores.mean() - neg_scores.mean()),
++        "score_std": float(torch.cat([pos_scores, neg_scores]).std(unbiased=False).clamp_min(1e-8)),
++    }
++
+ def principal_components_for_variance(
+     neutral: torch.Tensor,
+     *,
+diff --git a/src/clarifysae_llama/runners/build_ambik_concept_corpus.py b/src/clarifysae_llama/runners/build_ambik_concept_corpus.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..7c49dbf08577bbbacde58b6f49cdc10d14fbf264
+--- /dev/null
++++ b/src/clarifysae_llama/runners/build_ambik_concept_corpus.py
+@@ -0,0 +1,154 @@
++from __future__ import annotations
++
++"""Build factorized concept-vector rows directly from paired AmbiK examples."""
++
++import argparse
++import hashlib
++import json
++from pathlib import Path
++from typing import Any
++
++import pandas as pd
++
++from clarifysae_llama.config import load_yaml
++from clarifysae_llama.runners.generate_synthetic_corpus import _transcript
++from clarifysae_llama.utils.io import ensure_dir
++
++
++REQUIRED = {
++    "id", "environment_full", "ambiguous_task", "unambiguous_direct",
++    "question", "plan_for_clear_task",
++}
++
++
++def _split_for_id(value: str, train: float, dev: float, seed: int) -> str:
++    digest = hashlib.sha256(f"{seed}:{value}".encode("utf-8")).digest()
++    u = int.from_bytes(digest[:8], "big") / float(2**64)
++    return "train" if u < train else "dev" if u < train + dev else "test"
++
++
++def _clean(value: Any) -> str:
++    if value is None or pd.isna(value):
++        return ""
++    return str(value).strip()
++
++
++def _rows_for_example(row: pd.Series, *, split: str, generic_question: str) -> list[dict[str, Any]]:
++    sid = _clean(row["id"])
++    context = _clean(row["environment_full"])
++    ambiguous = _clean(row["ambiguous_task"])
++    clear = _clean(row["unambiguous_direct"])
++    question = _clean(row["question"])
++    plan = _clean(row["plan_for_clear_task"])
++    ambiguity_type = _clean(row.get("ambiguity_type", ""))
++    if not all((sid, context, ambiguous, clear, question, plan)):
++        raise ValueError(f"AmbiK row {sid!r} has an empty required value")
++
++    metadata = {"source": "ambik", "ambiguity_type": ambiguity_type}
++    output: list[dict[str, Any]] = []
++
++    def add(concept: str, pair: str, label: int, variant: str, text: str, pooling: str):
++        output.append({
++            "id": f"ambik:{sid}:{concept}:{variant}",
++            "pair_id": f"ambik:{sid}:{concept}:{pair}",
++            "scenario_id": f"ambik:{sid}",
++            "split": split,
++            "concept": concept,
++            "label": int(label),
++            "variant": variant,
++            "text": text,
++            "recommended_pooling": pooling,
++            "metadata": metadata,
++        })
++
++    add("ambiguity_state", "state", 1, "ambiguous_prompt",
++        _transcript(context, ambiguous), "last_nonpad")
++    add("ambiguity_state", "state", 0, "clear_prompt",
++        _transcript(context, clear), "last_nonpad")
++
++    # The annotated plan is placed after the ambiguous prompt as a benchmark
++    # hard negative: it commits to the gold-resolved behavior instead of asking.
++    add("ask_trajectory", "policy", 1, "gold_question",
++        _transcript(context, ambiguous, question), "assistant_mean")
++    add("ask_trajectory", "policy", 0, "gold_plan_without_question",
++        _transcript(context, ambiguous, plan), "assistant_mean")
++
++    add("targeted_question", "quality", 1, "gold_question",
++        _transcript(context, ambiguous, question), "assistant_mean")
++    add("targeted_question", "quality", 0, "generic_question",
++        _transcript(context, ambiguous, generic_question), "assistant_mean")
++
++    add("restraint_on_clear", "restraint", 1, "gold_plan",
++        _transcript(context, clear, plan), "assistant_mean")
++    add("restraint_on_clear", "restraint", 0, "unnecessary_question",
++        _transcript(context, clear, "Do you want to provide any more details?"), "assistant_mean")
++
++    add("neutral_prompt", "neutral_prompt", 0, "clear_prompt",
++        _transcript(context, clear), "last_nonpad")
++    add("neutral_response", "neutral_response", 0, "gold_plan",
++        _transcript(context, clear, plan), "assistant_mean")
++    return output
++
++
++def run(config: dict[str, Any]) -> None:
++    cfg = config["ambik_concept_corpus"]
++    input_path = Path(cfg["input_path"])
++    output_path = Path(cfg.get("output_path", "outputs/ambik/ambik_concept_corpus.jsonl"))
++    ensure_dir(output_path.parent)
++    df = pd.read_csv(input_path)
++    missing = REQUIRED - set(df.columns)
++    if missing:
++        raise ValueError(f"AmbiK input is missing columns: {sorted(missing)}")
++    limit = cfg.get("limit")
++    if limit is not None:
++        df = df.head(int(limit)).copy()
++
++    split_cfg = cfg.get("splits", {})
++    train = float(split_cfg.get("train", 0.70))
++    dev = float(split_cfg.get("dev", 0.15))
++    if train <= 0 or dev < 0 or train + dev >= 1:
++        raise ValueError("split fractions must satisfy train>0, dev>=0, train+dev<1")
++    seed = int(config.get("seed", 42))
++    generic_question = str(cfg.get("generic_question", "Could you provide more details?"))
++
++    rows: list[dict[str, Any]] = []
++    failures: list[dict[str, str]] = []
++    for _, source_row in df.iterrows():
++        sid = _clean(source_row["id"])
++        try:
++            rows.extend(_rows_for_example(
++                source_row,
++                split=_split_for_id(sid, train, dev, seed),
++                generic_question=generic_question,
++            ))
++        except Exception as exc:
++            failures.append({"id": sid, "error": repr(exc)})
++
++    with output_path.open("w", encoding="utf-8") as f:
++        for row in rows:
++            f.write(json.dumps(row, ensure_ascii=False) + "\n")
++    metadata = {
++        "input_path": str(input_path),
++        "rows": len(rows),
++        "source_examples": len(rows) // 10,
++        "failures": failures,
++        "split_counts": {
++            split: sum(1 for row in rows if row["split"] == split)
++            for split in ("train", "dev", "test")
++        },
++    }
++    output_path.with_suffix(".metadata.json").write_text(
++        json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
++    )
++    print(json.dumps(metadata, indent=2))
++
++
++def parse_args() -> argparse.Namespace:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--config", required=True)
++    return parser.parse_args()
++
++
++if __name__ == "__main__":
++    args = parse_args()
++    run(load_yaml(args.config))
+diff --git a/src/clarifysae_llama/runners/extract_concept_vectors.py b/src/clarifysae_llama/runners/extract_concept_vectors.py
+index 1f84f67c87f2b6e486e8364082455b7d78c5b343..36062cc15756a10f949613d5e75cb53d68451ef7 100644
+--- a/src/clarifysae_llama/runners/extract_concept_vectors.py
++++ b/src/clarifysae_llama/runners/extract_concept_vectors.py
+@@ -1,12 +1,18 @@
+ from __future__ import annotations
+ 
+-"""Extract dense clarification concept vectors from a labeled JSONL corpus."""
++"""Extract dense clarification concept vectors from a labeled JSONL corpus.
++
++The extractor supports matched differences, class centroids, and ridge probes;
++neutral-PCA removal can be configured separately for prompt-side and
++assistant-span representations.  Probe thresholds are always recalibrated after
++subspace projection, avoiding a subtle but consequential gating mismatch.
++"""
+ 
+ import argparse
+ import json
+ from collections import defaultdict
+ from pathlib import Path
+-from typing import Any
++from typing import Any, Iterable
+ 
+ import pandas as pd
+ import torch
+@@ -15,6 +21,8 @@ from tqdm import tqdm
+ from clarifysae_llama.backends.hf_backend import HFCausalBackend
+ from clarifysae_llama.config import load_yaml
+ from clarifysae_llama.discovery.concept_vectors import (
++    binary_score_diagnostics,
++    calibrate_probe_direction,
+     cosine_similarity,
+     difference_in_means,
+     fit_ridge_probe,
+@@ -39,6 +47,9 @@ def _read_jsonl(path: str | Path) -> list[dict[str, Any]]:
+             obj = json.loads(line)
+             if not isinstance(obj, dict):
+                 raise TypeError(f"Line {line_no} is not a JSON object")
++            for required in ("concept", "text", "recommended_pooling"):
++                if required not in obj:
++                    raise ValueError(f"Line {line_no} is missing required field {required!r}")
+             rows.append(obj)
+     if not rows:
+         raise ValueError(f"No rows found in {path}")
+@@ -87,6 +98,51 @@ def _assistant_start_char(text: str) -> int:
+     return idx + len(marker)
+ 
+ 
++def _assistant_token_start(tokenizer, text: str, valid_len: int) -> int:
++    """Locate the first assistant-response token in the exact full tokenization."""
++
++    char_start = _assistant_start_char(text)
++    if char_start >= len(text):
++        raise ValueError("assistant_mean pooling requested for text without an Assistant response")
++
++    if getattr(tokenizer, "is_fast", False):
++        encoded = tokenizer(
++            text,
++            add_special_tokens=True,
++            truncation=True,
++            max_length=valid_len,
++            return_offsets_mapping=True,
++        )
++        offsets = encoded.get("offset_mapping", [])[:valid_len]
++        for idx, pair in enumerate(offsets):
++            start, end = int(pair[0]), int(pair[1])
++            if end > char_start and end > start:
++                return idx
++        raise ValueError(
++            "Assistant response was fully truncated; increase concept_discovery.max_length"
++        )
++
++    # Slow-tokenizer fallback: find the common prefix between exact full and
++    # prefix tokenizations.  This is safer than blindly using prefix length,
++    # because BPE boundaries can change at the response boundary.
++    full_ids = tokenizer(
++        text, add_special_tokens=True, truncation=True, max_length=valid_len
++    )["input_ids"]
++    prefix_ids = tokenizer(text[:char_start], add_special_tokens=True)["input_ids"]
++    common = 0
++    for left, right in zip(full_ids, prefix_ids):
++        if left != right:
++            break
++        common += 1
++    start = min(common, valid_len)
++    if start >= valid_len:
++        raise ValueError(
++            "Assistant response was fully truncated or could not be located; "
++            "use a fast tokenizer or increase max_length"
++        )
++    return start
++
++
+ def _pool_hidden(
+     hidden: torch.Tensor,
+     attention_mask: torch.Tensor,
+@@ -96,10 +152,13 @@ def _pool_hidden(
+     mode: str,
+     mean_after_token: int,
+ ) -> torch.Tensor:
++    del input_ids  # retained in the signature for backwards-compatible callers
+     pooled: list[torch.Tensor] = []
+     mode = mode.strip().lower().replace("-", "_")
+     for i in range(hidden.shape[0]):
+         valid_len = int(attention_mask[i].sum().item())
++        if valid_len <= 0:
++            raise ValueError("Encountered a fully padded example")
+         h = hidden[i, :valid_len]
+         if mode == "last_nonpad":
+             pooled.append(h[-1])
+@@ -109,11 +168,7 @@ def _pool_hidden(
+             start = min(max(int(mean_after_token), 0), max(valid_len - 1, 0))
+             pooled.append(h[start:].mean(dim=0))
+         elif mode == "assistant_mean":
+-            # Re-tokenize the prefix only. Since extraction uses right padding,
+-            # its token count is a stable response-span boundary.
+-            prefix = texts[i][:_assistant_start_char(texts[i])]
+-            start = len(tokenizer(prefix, add_special_tokens=True)["input_ids"])
+-            start = min(max(start, 0), max(valid_len - 1, 0))
++            start = _assistant_token_start(tokenizer, texts[i], valid_len)
+             pooled.append(h[start:].mean(dim=0))
+         else:
+             raise ValueError(f"Unsupported pooling mode: {mode}")
+@@ -127,7 +182,13 @@ def _safe_key(text: str) -> str:
+ def _paired_matrices(rows: list[dict[str, Any]], acts: torch.Tensor, pair_field: str):
+     by_pair: dict[str, dict[int, torch.Tensor]] = defaultdict(dict)
+     for row, act in zip(rows, acts):
+-        by_pair[str(row[pair_field])][int(row["label"])] = act
++        if pair_field not in row:
++            raise ValueError(f"Row {row.get('id', '<unknown>')} lacks pair field {pair_field!r}")
++        label = int(row["label"])
++        pair_id = str(row[pair_field])
++        if label in by_pair[pair_id]:
++            raise ValueError(f"Duplicate label {label} for pair {pair_id!r}")
++        by_pair[pair_id][label] = act
+     positives, negatives = [], []
+     for pair in by_pair.values():
+         if 1 in pair and 0 in pair:
+@@ -138,16 +199,78 @@ def _paired_matrices(rows: list[dict[str, Any]], acts: torch.Tensor, pair_field:
+     return torch.stack(positives), torch.stack(negatives)
+ 
+ 
++def _normalise_string_set(value: Any) -> set[str]:
++    if value is None:
++        return set()
++    if isinstance(value, str):
++        return {value}
++    return {str(item) for item in value}
++
++
++def _neutral_concepts_by_pooling(pca_cfg: dict[str, Any]) -> dict[str, set[str]]:
++    result: dict[str, set[str]] = {}
++    for pooling, concepts in dict(pca_cfg.get("concepts_by_pooling", {})).items():
++        result[str(pooling).replace("-", "_")] = _normalise_string_set(concepts)
++    fallback = _normalise_string_set(pca_cfg.get("concepts"))
++    fallback |= _normalise_string_set(pca_cfg.get("concept"))
++    if fallback:
++        result["*"] = fallback
++    return result
++
++
++def _row_split(row: dict[str, Any]) -> str:
++    return str(row.get("split", "train"))
++
++
++def _indices_for_splits(rows: list[dict[str, Any]], splits: set[str] | None) -> list[int]:
++    if not splits:
++        return list(range(len(rows)))
++    return [i for i, row in enumerate(rows) if _row_split(row) in splits]
++
++
++def _class_matrices(
++    rows: list[dict[str, Any]],
++    acts: torch.Tensor,
++    *,
++    allowed_indices: Iterable[int],
++) -> tuple[list[dict[str, Any]], torch.Tensor, torch.Tensor]:
++    indices = list(allowed_indices)
++    selected_rows = [rows[i] for i in indices]
++    selected_acts = acts[indices]
++    pos_mask = torch.tensor([int(row.get("label", 0)) == 1 for row in selected_rows], dtype=torch.bool)
++    neg_mask = ~pos_mask
++    return selected_rows, selected_acts[pos_mask], selected_acts[neg_mask]
++
++
++def _concept_pooling(rows: list[dict[str, Any]]) -> str:
++    modes = {str(row.get("recommended_pooling", "last_nonpad")).replace("-", "_") for row in rows}
++    if len(modes) != 1:
++        raise ValueError(f"A concept must use one pooling distribution, found {sorted(modes)}")
++    return next(iter(modes))
++
++
+ def run(config: dict[str, Any]) -> None:
+     set_seed(int(config.get("seed", 42)))
+     cfg = config["concept_discovery"]
+-    rows = _read_jsonl(cfg["dataset_path"])
+-    concepts_filter = cfg.get("concepts")
+-    if concepts_filter:
+-        allowed = set(map(str, concepts_filter))
+-        rows = [row for row in rows if str(row.get("concept")) in allowed]
++    all_rows = _read_jsonl(cfg["dataset_path"])
++
++    pca_cfg = dict(cfg.get("neutral_pca", {}))
++    neutral_by_pooling = _neutral_concepts_by_pooling(pca_cfg)
++    neutral_concepts = set().union(*neutral_by_pooling.values()) if neutral_by_pooling else set()
++    configured_concepts = _normalise_string_set(cfg.get("concepts"))
++    if configured_concepts:
++        keep = configured_concepts | neutral_concepts
++        rows = [row for row in all_rows if str(row.get("concept")) in keep]
++        target_concepts = sorted(configured_concepts)
++    else:
++        rows = all_rows
++        target_concepts = sorted({str(row["concept"]) for row in rows} - neutral_concepts)
+     if not rows:
+-        raise ValueError("No rows remain after concept filtering")
++        raise ValueError("No rows remain after concept/neutral filtering")
++
++    missing_targets = [c for c in target_concepts if not any(str(r["concept"]) == c for r in rows)]
++    if missing_targets:
++        raise ValueError(f"Configured concepts absent from the corpus: {missing_targets}")
+ 
+     backend = HFCausalBackend(config)
+     tokenizer, model = backend.tokenizer, backend.model
+@@ -166,15 +289,18 @@ def run(config: dict[str, Any]) -> None:
+             batch_rows = rows[start:start + batch_size]
+             texts = [str(row["text"]) for row in batch_rows]
+             tokenized = tokenizer(
+-                texts, return_tensors="pt", padding=True, truncation=True,
+-                max_length=max_length, add_special_tokens=True,
++                texts,
++                return_tensors="pt",
++                padding=True,
++                truncation=True,
++                max_length=max_length,
++                add_special_tokens=True,
+             )
+             tokenized = {k: v.to(model_device) for k, v in tokenized.items()}
+             with torch.inference_mode():
+                 _ = model(**tokenized, use_cache=False)
+             outputs = capture.pop()
+             for hp, hidden in outputs.items():
+-                # Recommended pooling can differ per corpus row; group modes in-batch.
+                 if default_pooling == "recommended":
+                     pooled = torch.empty((len(batch_rows), hidden.shape[-1]), dtype=torch.float32)
+                     mode_groups: dict[str, list[int]] = defaultdict(list)
+@@ -182,7 +308,9 @@ def run(config: dict[str, Any]) -> None:
+                         mode_groups[str(row.get("recommended_pooling", "last_nonpad"))].append(i)
+                     for mode, indices in mode_groups.items():
+                         hidden_index = torch.tensor(indices, device=hidden.device, dtype=torch.long)
+-                        token_index = torch.tensor(indices, device=tokenized["attention_mask"].device, dtype=torch.long)
++                        token_index = torch.tensor(
++                            indices, device=tokenized["attention_mask"].device, dtype=torch.long
++                        )
+                         sub = _pool_hidden(
+                             hidden.index_select(0, hidden_index),
+                             tokenized["attention_mask"].index_select(0, token_index),
+@@ -195,57 +323,116 @@ def run(config: dict[str, Any]) -> None:
+                         pooled[indices] = sub
+                 else:
+                     pooled = _pool_hidden(
+-                        hidden, tokenized["attention_mask"], tokenized["input_ids"],
+-                        tokenizer, texts, default_pooling, mean_after_token,
++                        hidden,
++                        tokenized["attention_mask"],
++                        tokenized["input_ids"],
++                        tokenizer,
++                        texts,
++                        default_pooling,
++                        mean_after_token,
+                     )
+                 activation_rows[hp].append(pooled)
+ 
+     activations = {hp: torch.cat(parts, dim=0) for hp, parts in activation_rows.items()}
+-    pca_cfg = cfg.get("neutral_pca", {})
+-    neutral_concept = pca_cfg.get("concept")
+     neutral_fraction = float(pca_cfg.get("variance_fraction", 0.5))
+     max_pcs = pca_cfg.get("max_components")
++    require_neutral = bool(pca_cfg.get("required", False))
+     methods = list(cfg.get("methods", ["paired_difference", "difference_in_means", "ridge_probe"]))
++    fit_splits = _normalise_string_set(cfg.get("fit_splits")) or None
++    eval_splits = _normalise_string_set(cfg.get("eval_splits")) or None
++    pair_field = str(cfg.get("pair_id_field", "pair_id"))
+ 
+     vectors: dict[str, dict[str, Any]] = {}
+     diagnostics: list[dict[str, Any]] = []
+-    concepts = sorted({str(row["concept"]) for row in rows if str(row["concept"]) != str(neutral_concept)})
+     for hp in hookpoints:
+         all_acts = activations[hp]
+-        neutral_components = torch.empty((0, all_acts.shape[1]))
+-        if neutral_concept is not None:
+-            neutral_idx = [i for i, row in enumerate(rows) if str(row["concept"]) == str(neutral_concept)]
++        average_residual_norm = float(all_acts.norm(dim=-1).mean())
++        neutral_components_by_pooling: dict[str, torch.Tensor] = {}
++        for pooling, concepts in neutral_by_pooling.items():
++            neutral_idx = [
++                i for i, row in enumerate(rows)
++                if str(row["concept"]) in concepts
++                and (not fit_splits or _row_split(row) in fit_splits)
++            ]
+             if neutral_idx:
+-                neutral_components = principal_components_for_variance(
+-                    all_acts[neutral_idx], variance_fraction=neutral_fraction, max_components=max_pcs
++                neutral_components_by_pooling[pooling] = principal_components_for_variance(
++                    all_acts[neutral_idx],
++                    variance_fraction=neutral_fraction,
++                    max_components=max_pcs,
+                 )
++            elif require_neutral:
++                raise ValueError(
++                    f"No neutral rows found for pooling={pooling!r}, concepts={sorted(concepts)}"
++                )
++
++        for concept in target_concepts:
++            concept_idx = [i for i, row in enumerate(rows) if str(row["concept"]) == concept]
++            concept_rows_all = [rows[i] for i in concept_idx]
++            concept_acts_all = all_acts[concept_idx]
++            pooling_mode = _concept_pooling(concept_rows_all)
++            neutral_components = neutral_components_by_pooling.get(
++                pooling_mode,
++                neutral_components_by_pooling.get("*", torch.empty((0, all_acts.shape[1]))),
++            )
+ 
+-        for concept in concepts:
+-            idx = [i for i, row in enumerate(rows) if str(row["concept"]) == concept]
+-            concept_rows = [rows[i] for i in idx]
+-            concept_acts = all_acts[idx]
+-            pos = concept_acts[[int(row["label"]) == 1 for row in concept_rows]]
+-            neg = concept_acts[[int(row["label"]) == 0 for row in concept_rows]]
++            fit_local_idx = [
++                i for i, row in enumerate(concept_rows_all)
++                if not fit_splits or _row_split(row) in fit_splits
++            ]
++            fit_rows, pos, neg = _class_matrices(
++                concept_rows_all, concept_acts_all, allowed_indices=fit_local_idx
++            )
+             if pos.shape[0] == 0 or neg.shape[0] == 0:
+-                continue
++                raise ValueError(
++                    f"Concept {concept!r} lacks both classes in fit_splits={sorted(fit_splits or [])}"
++                )
++
++            eval_local_idx = [
++                i for i, row in enumerate(concept_rows_all)
++                if eval_splits and _row_split(row) in eval_splits
++            ]
++            eval_rows: list[dict[str, Any]] = []
++            eval_pos = eval_neg = None
++            if eval_local_idx:
++                eval_rows, eval_pos, eval_neg = _class_matrices(
++                    concept_rows_all, concept_acts_all, allowed_indices=eval_local_idx
++                )
++                if eval_pos.shape[0] == 0 or eval_neg.shape[0] == 0:
++                    eval_rows, eval_pos, eval_neg = [], None, None
+ 
+             for method in methods:
+-                probe = None
+                 method_name = str(method).strip().lower().replace("-", "_")
+                 if method_name == "difference_in_means":
+                     vector = difference_in_means(pos, neg)
+                 elif method_name == "paired_difference":
+-                    pair_pos, pair_neg = _paired_matrices(concept_rows, concept_acts, cfg.get("pair_id_field", "pair_id"))
+-                    vector = paired_difference_in_means(pair_pos, pair_neg)
++                    fit_acts = torch.cat([pos, neg], dim=0)  # placeholder overwritten below
++                    # Preserve row/activation order for pair matching.
++                    fit_global_local = fit_local_idx
++                    fit_acts = concept_acts_all[fit_global_local]
++                    vector = paired_difference_in_means(
++                        *_paired_matrices(fit_rows, fit_acts, pair_field)
++                    )
+                 elif method_name == "ridge_probe":
+-                    probe = fit_ridge_probe(pos, neg, l2=float(cfg.get("ridge_l2", 1.0)))
+-                    vector = probe.direction
++                    vector = fit_ridge_probe(
++                        pos, neg, l2=float(cfg.get("ridge_l2", 1.0))
++                    ).direction
+                 else:
+                     raise ValueError(f"Unsupported concept-vector method: {method}")
+ 
+                 raw_vector = vector.clone()
+                 if neutral_components.shape[0] > 0:
+                     vector = remove_subspace(vector, neutral_components)
++                # Recalibrate every direction after PCA projection. For ridge
++                # probes this replaces the invalid pre-projection bias/scale.
++                calibration = calibrate_probe_direction(vector, pos, neg)
++                vector = calibration.direction
++                fit_diag = binary_score_diagnostics(vector, calibration.bias, pos, neg)
++                eval_diag: dict[str, float] = {}
++                if eval_pos is not None and eval_neg is not None:
++                    eval_diag = binary_score_diagnostics(
++                        vector, calibration.bias, eval_pos, eval_neg
++                    )
++
+                 key = f"{_safe_key(concept)}__{method_name}__{_safe_key(hp)}"
+                 record: dict[str, Any] = {
+                     "vector": vector.cpu(),
+@@ -253,41 +440,65 @@ def run(config: dict[str, Any]) -> None:
+                     "concept": concept,
+                     "method": method_name,
+                     "hookpoint": hp,
++                    "pooling": pooling_mode,
+                     "n_positive": int(pos.shape[0]),
+                     "n_negative": int(neg.shape[0]),
+                     "neutral_pcs_removed": int(neutral_components.shape[0]),
++                    "average_residual_norm": average_residual_norm,
++                    "score_bias": calibration.bias,
++                    "score_temperature": calibration.score_std,
++                    "score_positive_mean": calibration.score_mean_positive,
++                    "score_negative_mean": calibration.score_mean_negative,
++                    "fit_diagnostics": fit_diag,
++                    "eval_diagnostics": eval_diag,
+                 }
+-                if probe is not None:
++                if method_name == "ridge_probe":
+                     record.update({
+-                        "probe_bias": probe.bias,
+-                        "probe_temperature": probe.score_std,
+-                        "probe_positive_mean": probe.score_mean_positive,
+-                        "probe_negative_mean": probe.score_mean_negative,
++                        "probe_bias": calibration.bias,
++                        "probe_temperature": calibration.score_std,
++                        "probe_positive_mean": calibration.score_mean_positive,
++                        "probe_negative_mean": calibration.score_mean_negative,
+                     })
+                 vectors[key] = record
+-                diagnostics.append({
++
++                row_diag: dict[str, Any] = {
+                     "vector_key": key,
+                     "concept": concept,
+                     "method": method_name,
+                     "hookpoint": hp,
++                    "pooling": pooling_mode,
+                     "n_positive": int(pos.shape[0]),
+                     "n_negative": int(neg.shape[0]),
+                     "vector_norm": float(vector.norm()),
+                     "raw_clean_cosine": cosine_similarity(raw_vector, vector),
+                     "neutral_pcs_removed": int(neutral_components.shape[0]),
+-                })
++                    "average_residual_norm": average_residual_norm,
++                }
++                row_diag.update({f"fit_{k}": v for k, v in fit_diag.items()})
++                row_diag.update({f"eval_{k}": v for k, v in eval_diag.items()})
++                diagnostics.append(row_diag)
+ 
+     output_path = Path(cfg.get("output_path", "outputs/concept_vectors/clarification_vectors.pt"))
+     ensure_dir(output_path.parent)
+     torch.save({
+-        "format": "clarifysae_dense_vector_v1",
++        "format": "clarifysae_dense_vector_v2",
+         "model_name": config["model"]["name"],
+         "dataset_path": cfg["dataset_path"],
+         "vectors": vectors,
+-        "metadata": {"pooling": default_pooling, "mean_after_token": mean_after_token},
++        "metadata": {
++            "pooling": default_pooling,
++            "mean_after_token": mean_after_token,
++            "fit_splits": sorted(fit_splits or []),
++            "eval_splits": sorted(eval_splits or []),
++            "neutral_concepts_by_pooling": {
++                key: sorted(value) for key, value in neutral_by_pooling.items()
++            },
++        },
+     }, output_path)
+     pd.DataFrame(diagnostics).to_csv(output_path.with_suffix(".csv"), index=False)
+-    output_path.with_suffix(".config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
++    output_path.with_suffix(".config.json").write_text(
++        json.dumps(config, indent=2), encoding="utf-8"
++    )
+     print(f"Saved {len(vectors)} vectors to {output_path}")
+ 
+ 
+diff --git a/src/clarifysae_llama/runners/generate_synthetic_corpus.py b/src/clarifysae_llama/runners/generate_synthetic_corpus.py
+index da55e6e74a3d80ea7a933ca64603e3388781f702..b89585e05f6472dcdad7eb020a1fcdfc5b09a03d 100644
+--- a/src/clarifysae_llama/runners/generate_synthetic_corpus.py
++++ b/src/clarifysae_llama/runners/generate_synthetic_corpus.py
+@@ -1,21 +1,23 @@
+ from __future__ import annotations
+ 
+-"""Generate matched clarification counterfactuals with the model under study.
++"""Generate matched clarification counterfactuals with a language model.
+ 
+-The output is JSONL in a long format suitable for dense-vector extraction.  Each
+-underlying scenario contributes multiple tightly matched positive/negative pairs,
+-which is much less confounded than collecting arbitrary question-containing text.
++The JSONL is deliberately factorized.  It separates prompt-side ambiguity
++recognition from response-side ask/guess, question targeting, and restraint.
++Neutral prompt and response rows are also emitted so that nuisance principal
++components can be estimated rather than merely configured in downstream code.
+ """
+ 
+ import argparse
++import difflib
+ import json
++import random
+ import re
+ from pathlib import Path
+ from typing import Any
+ 
+ from tqdm import tqdm
+ 
+-from clarifysae_llama.backends.hf_backend import HFCausalBackend
+ from clarifysae_llama.config import load_yaml
+ from clarifysae_llama.utils.io import ensure_dir
+ from clarifysae_llama.utils.seed import set_seed
+@@ -29,6 +31,11 @@ DEFAULT_TOPICS = [
+     "safety-critical maintenance", "accessibility", "collaboration", "research",
+ ]
+ 
++FORBIDDEN_META_TERMS = {
++    "ambiguous", "ambiguity", "underspecified", "under-specified",
++    "clarification", "clarify", "missing information",
++}
++
+ 
+ def _extract_json_object(text: str) -> dict[str, Any]:
+     candidates = [text.strip()]
+@@ -48,7 +55,15 @@ def _extract_json_object(text: str) -> dict[str, Any]:
+     raise ValueError(f"Could not parse a JSON object from model output: {text[:500]!r}")
+ 
+ 
+-def _validate_scenario(obj: dict[str, Any]) -> dict[str, str]:
++def _content_words(text: str) -> set[str]:
++    stop = {"a", "an", "the", "of", "for", "to", "which", "what", "type", "kind", "choice"}
++    return {
++        token for token in re.findall(r"[a-z0-9]+", text.lower())
++        if len(token) >= 3 and token not in stop
++    }
++
++
++def _validate_scenario(obj: dict[str, Any], *, strict: bool = True) -> dict[str, str]:
+     required = [
+         "context", "ambiguous_instruction", "clear_instruction", "missing_slot",
+         "targeted_question", "direct_response", "guessing_response", "generic_question",
+@@ -57,28 +72,67 @@ def _validate_scenario(obj: dict[str, Any]) -> dict[str, str]:
+     missing = [key for key in required if not str(obj.get(key, "")).strip()]
+     if missing:
+         raise ValueError(f"Generated scenario is missing fields: {missing}")
+-    return {key: str(obj[key]).strip() for key in required}
++    scenario = {key: str(obj[key]).strip() for key in required}
++
++    joined = " ".join(scenario.values()).lower()
++    forbidden = sorted(term for term in FORBIDDEN_META_TERMS if term in joined)
++    if forbidden:
++        raise ValueError(f"Scenario contains forbidden meta-terms: {forbidden}")
++
++    for key in ("targeted_question", "generic_question", "unnecessary_question"):
++        if not scenario[key].rstrip().endswith("?"):
++            raise ValueError(f"{key} must be a question ending in '?'")
++    if scenario["targeted_question"].casefold() == scenario["generic_question"].casefold():
++        raise ValueError("targeted_question and generic_question must differ")
++    if scenario["ambiguous_instruction"].casefold() == scenario["clear_instruction"].casefold():
++        raise ValueError("clear_instruction must fill the missing slot")
++
++    if strict:
++        similarity = difflib.SequenceMatcher(
++            None, scenario["ambiguous_instruction"].casefold(), scenario["clear_instruction"].casefold()
++        ).ratio()
++        if similarity < 0.55:
++            raise ValueError(
++                "clear_instruction is not a minimal edit of ambiguous_instruction "
++                f"(character similarity={similarity:.3f})"
++            )
++        slot_words = _content_words(scenario["missing_slot"])
++        target_words = _content_words(scenario["targeted_question"])
++        generic_words = _content_words(scenario["generic_question"])
++        if slot_words and not (slot_words & target_words):
++            raise ValueError(
++                "targeted_question has no lexical overlap with missing_slot; "
++                "rewrite the slot label or question more explicitly"
++            )
++        if slot_words & generic_words:
++            raise ValueError("generic_question leaks the named missing slot")
++        for key in ("direct_response", "guessing_response"):
++            if scenario[key].rstrip().endswith("?"):
++                raise ValueError(f"{key} should be a direct answer/action, not a question")
++
++    return scenario
+ 
+ 
+ def _writer_prompt(topic: str, scenario_index: int) -> str:
+     return f"""Create one realistic matched counterfactual scenario about {topic} for mechanistic-interpretability research.
+ 
+-The goal is to separate these concepts: (1) recognizing underspecification, (2) choosing to ask rather than guess, and (3) asking for the specific missing variable rather than merely producing an interrogative sentence.
++The goal is to separate these concepts: (1) recognizing that a required variable is not specified, (2) choosing to ask rather than guess, and (3) asking for the specific variable rather than merely producing an interrogative sentence.
+ 
+ Return exactly one JSON object with these string fields:
+ - context: all relevant environment/background facts
+-- ambiguous_instruction: an instruction with exactly one consequential missing slot and at least two plausible values
++- ambiguous_instruction: an instruction with exactly one consequential unspecified slot and at least two plausible values
+ - clear_instruction: the same instruction with that slot explicitly filled; change as little wording as possible
+-- missing_slot: a short noun phrase naming the information that is missing
+-- targeted_question: one concise, actionable question that asks only for the missing slot
++- missing_slot: a short noun phrase naming the information that is needed
++- targeted_question: one concise, actionable question that asks only for that slot and uses at least one important word from missing_slot
+ - direct_response: an appropriate direct response/action to the clear instruction
+-- guessing_response: a fluent response to the ambiguous instruction that silently selects one plausible value (this is a hard negative)
+-- generic_question: an interrogative response to the ambiguous instruction that does not identify the missing slot (hard negative)
++- guessing_response: a fluent response to the ambiguous instruction that silently selects one plausible value (hard negative)
++- generic_question: an interrogative response to the ambiguous instruction that does not identify or name the missing slot (hard negative)
+ - unnecessary_question: a plausible but needless question asked after the clear instruction (hard negative)
+ 
+ Constraints:
+-- Do not use meta-words such as “ambiguous”, “underspecified”, “clarification”, or “missing information” inside the scenario.
++- Do not use meta-words such as “ambiguous”, “underspecified”, “clarification”, “clarify”, or “missing information” inside the scenario.
+ - Make the question content semantically necessary, not merely stylistic.
++- The clear and unclear instructions must be a minimal pair.
+ - Keep every field short enough that the whole JSON is under 350 words.
+ - Scenario id seed: {scenario_index}.
+ """
+@@ -91,15 +145,29 @@ def _transcript(context: str, instruction: str, response: str | None = None) ->
+     return text
+ 
+ 
+-def expand_scenario(scenario_id: str, topic: str, s: dict[str, str]) -> list[dict[str, Any]]:
++def expand_scenario(
++    scenario_id: str,
++    topic: str,
++    s: dict[str, str],
++    *,
++    split: str = "train",
++) -> list[dict[str, Any]]:
+     metadata = {"topic": topic, "missing_slot": s["missing_slot"]}
+     rows: list[dict[str, Any]] = []
+ 
+-    def add(concept: str, pair_suffix: str, label: int, variant: str, text: str, pooling: str) -> None:
++    def add(
++        concept: str,
++        pair_suffix: str,
++        label: int,
++        variant: str,
++        text: str,
++        pooling: str,
++    ) -> None:
+         rows.append({
+             "id": f"{scenario_id}:{concept}:{variant}",
+             "pair_id": f"{scenario_id}:{concept}:{pair_suffix}",
+             "scenario_id": scenario_id,
++            "split": split,
+             "concept": concept,
+             "label": int(label),
+             "variant": variant,
+@@ -108,20 +176,22 @@ def expand_scenario(scenario_id: str, topic: str, s: dict[str, str]) -> list[dic
+             "metadata": metadata,
+         })
+ 
+-    # State vector: decide whether the prompt lacks a required variable, before
+-    # an assistant answer exists.
++    # Prompt-side state: this can be used as a detector/gate because the two
++    # examples differ before any assistant response is generated.
+     add("ambiguity_state", "state", 1, "ambiguous_prompt",
+         _transcript(s["context"], s["ambiguous_instruction"]), "last_nonpad")
+     add("ambiguity_state", "state", 0, "clear_prompt",
+         _transcript(s["context"], s["clear_instruction"]), "last_nonpad")
+ 
+-    # Ask-vs-guess policy under the exact same ambiguous prompt.
+-    add("ask_policy", "policy", 1, "targeted_question",
++    # Response-trajectory direction under the same prompt. This is intentionally
++    # not called a pre-response policy state: the signal only becomes observable
++    # after the assistant's question/guess tokens are present.
++    add("ask_trajectory", "policy", 1, "targeted_question",
+         _transcript(s["context"], s["ambiguous_instruction"], s["targeted_question"]), "assistant_mean")
+-    add("ask_policy", "policy", 0, "silent_guess",
++    add("ask_trajectory", "policy", 0, "silent_guess",
+         _transcript(s["context"], s["ambiguous_instruction"], s["guessing_response"]), "assistant_mean")
+ 
+-    # Question quality: targeted versus generic while holding the prompt fixed.
++    # Question content: targeted versus generic while holding the prompt fixed.
+     add("targeted_question", "quality", 1, "targeted_question",
+         _transcript(s["context"], s["ambiguous_instruction"], s["targeted_question"]), "assistant_mean")
+     add("targeted_question", "quality", 0, "generic_question",
+@@ -133,52 +203,111 @@ def expand_scenario(scenario_id: str, topic: str, s: dict[str, str]) -> list[dic
+     add("restraint_on_clear", "restraint", 0, "unnecessary_question",
+         _transcript(s["context"], s["clear_instruction"], s["unnecessary_question"]), "assistant_mean")
+ 
++    # Nuisance corpora for Anthropic-style PCA removal. Keep prompt and response
++    # neutral rows separate because their pooling distributions are different.
++    add("neutral_prompt", "neutral_prompt", 0, "clear_prompt",
++        _transcript(s["context"], s["clear_instruction"]), "last_nonpad")
++    add("neutral_response", "neutral_response", 0, "helpful_direct_response",
++        _transcript(s["context"], s["clear_instruction"], s["direct_response"]), "assistant_mean")
++
+     return rows
+ 
+ 
++def _topic_split_map(
++    topics: list[str],
++    *,
++    seed: int,
++    train_fraction: float,
++    dev_fraction: float,
++) -> dict[str, str]:
++    if train_fraction <= 0 or dev_fraction < 0 or train_fraction + dev_fraction >= 1:
++        raise ValueError("split fractions must satisfy train>0, dev>=0, and train+dev<1")
++    shuffled = list(topics)
++    random.Random(seed).shuffle(shuffled)
++    n = len(shuffled)
++    n_train = max(1, int(round(n * train_fraction)))
++    n_dev = int(round(n * dev_fraction))
++    if n_train + n_dev >= n:
++        n_dev = max(0, n - n_train - 1)
++    mapping: dict[str, str] = {}
++    for i, topic in enumerate(shuffled):
++        mapping[topic] = "train" if i < n_train else "dev" if i < n_train + n_dev else "test"
++    return mapping
++
++
+ def run(config: dict[str, Any]) -> None:
+-    set_seed(int(config.get("seed", 42)))
++    seed = int(config.get("seed", 42))
++    set_seed(seed)
+     corpus_cfg = config.get("synthetic_corpus", {})
+     output_path = Path(corpus_cfg.get("output_path", "outputs/synthetic/clarification_counterfactuals.jsonl"))
+     ensure_dir(output_path.parent)
+ 
+-    topics = list(corpus_cfg.get("topics", DEFAULT_TOPICS))
++    topics = [str(x) for x in corpus_cfg.get("topics", DEFAULT_TOPICS)]
+     n_per_topic = int(corpus_cfg.get("scenarios_per_topic", 12))
+     max_retries = int(corpus_cfg.get("max_retries", 2))
++    strict_validation = bool(corpus_cfg.get("strict_validation", True))
++    split_cfg = corpus_cfg.get("splits", {})
++    split_map = _topic_split_map(
++        topics,
++        seed=seed,
++        train_fraction=float(split_cfg.get("train", 0.70)),
++        dev_fraction=float(split_cfg.get("dev", 0.15)),
++    )
++    from clarifysae_llama.backends.hf_backend import HFCausalBackend
++
+     backend = HFCausalBackend(config)
+ 
+     rows: list[dict[str, Any]] = []
+     failures: list[dict[str, Any]] = []
++    accepted_scenarios = 0
+     for topic_idx, topic in enumerate(tqdm(topics, desc="Topics")):
+         for local_idx in range(n_per_topic):
+             scenario_index = topic_idx * n_per_topic + local_idx
+-            prompt = _writer_prompt(str(topic), scenario_index)
++            prompt = _writer_prompt(topic, scenario_index)
+             last_error: Exception | None = None
+             for attempt in range(max_retries + 1):
+                 try:
+                     raw = backend.generate(prompt)
+-                    scenario = _validate_scenario(_extract_json_object(raw))
++                    scenario = _validate_scenario(
++                        _extract_json_object(raw), strict=strict_validation
++                    )
+                     scenario_id = f"s{scenario_index:05d}"
+-                    rows.extend(expand_scenario(scenario_id, str(topic), scenario))
++                    rows.extend(expand_scenario(
++                        scenario_id, topic, scenario, split=split_map[topic]
++                    ))
++                    accepted_scenarios += 1
+                     last_error = None
+                     break
+                 except Exception as exc:  # preserve failed generations for audit
+                     last_error = exc
+             if last_error is not None:
+-                failures.append({"topic": topic, "scenario_index": scenario_index, "error": repr(last_error)})
++                failures.append({
++                    "topic": topic,
++                    "scenario_index": scenario_index,
++                    "split": split_map[topic],
++                    "error": repr(last_error),
++                })
+ 
+     with output_path.open("w", encoding="utf-8") as f:
+         for row in rows:
+             f.write(json.dumps(row, ensure_ascii=False) + "\n")
+     failure_path = output_path.with_suffix(".failures.json")
+     failure_path.write_text(json.dumps(failures, ensure_ascii=False, indent=2), encoding="utf-8")
++    split_counts = {
++        split: sum(1 for row in rows if row["split"] == split)
++        for split in ("train", "dev", "test")
++    }
+     metadata = {
+         "rows": len(rows),
+-        "scenarios": len(rows) // 8,
++        "rows_per_scenario": 10,
++        "scenarios": accepted_scenarios,
+         "failures": len(failures),
+         "topics": topics,
++        "topic_splits": split_map,
++        "row_split_counts": split_counts,
+         "scenarios_per_topic": n_per_topic,
+         "writer_model": config["model"]["name"],
++        "strict_validation": strict_validation,
+     }
+     output_path.with_suffix(".metadata.json").write_text(
+         json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
+diff --git a/src/clarifysae_llama/runners/project_concept_vector_to_sae.py b/src/clarifysae_llama/runners/project_concept_vector_to_sae.py
+index 263267a78e8fd8e78a3428a3d89c21c797bd5a21..376a5e4bd3a8a5780ad4b7ba94f5096625fed35d 100644
+--- a/src/clarifysae_llama/runners/project_concept_vector_to_sae.py
++++ b/src/clarifysae_llama/runners/project_concept_vector_to_sae.py
+@@ -1,6 +1,6 @@
+ from __future__ import annotations
+ 
+-"""Approximate a dense concept vector with a small signed set of SAE features."""
++"""Approximate a dense concept vector with nested signed SAE feature sets."""
+ 
+ import argparse
+ import json
+@@ -29,69 +29,57 @@ def _load_vector(path: str, key: str) -> tuple[torch.Tensor, dict[str, Any]]:
+     return record["vector"].float().flatten(), dict(record)
+ 
+ 
+-def run(config: dict[str, Any]) -> None:
+-    cfg = config["sae_projection"]
+-    vector, vector_record = _load_vector(cfg["vector_path"], cfg["vector_key"])
+-    device_name = str(cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu"))
+-    device = torch.device(device_name)
+-    dtype_name = str(cfg.get("dtype", "float32"))
+-    dtype = getattr(torch, dtype_name)
+-
+-    sae = load_sae(
+-        loader=cfg.get("loader", "sparsify"),
+-        sae_repo=cfg["sae_repo"],
+-        hookpoint=cfg["hookpoint"],
+-        sae_file=cfg.get("sae_file"),
+-        sae_id=cfg.get("sae_id"),
+-        device=device,
+-        dtype=dtype,
+-    )
+-    decoder = get_decoder_matrix(sae).detach().float().cpu()
+-    if decoder.shape[1] != vector.numel():
+-        raise ValueError(
+-            f"SAE decoder dimension {decoder.shape[1]} does not match vector dimension {vector.numel()}"
+-        )
+-
+-    vector_unit = l2_normalize(vector)
+-    decoder_norms = decoder.norm(dim=1).clamp_min(1e-8)
+-    cosines = (decoder @ vector_unit) / decoder_norms
+-    candidate_k = min(int(cfg.get("candidate_k", 256)), decoder.shape[0])
+-    selected_k = min(int(cfg.get("selected_k", 16)), candidate_k)
+-    candidate_indices = torch.topk(cosines.abs(), k=candidate_k).indices
+-    candidate_decoder = decoder[candidate_indices]
+-
+-    # Solve D^T c ~= v over a moderately sized candidate pool, then retain the
+-    # largest signed coefficients and refit on that sparse support.
+-    coeffs = torch.linalg.lstsq(candidate_decoder.T, vector).solution
+-    keep_local = torch.topk(coeffs.abs(), k=selected_k).indices
++def _projection_for_k(
++    *,
++    vector: torch.Tensor,
++    decoder: torch.Tensor,
++    cosines: torch.Tensor,
++    candidate_indices: torch.Tensor,
++    candidate_coeffs: torch.Tensor,
++    k: int,
++    normalize_weights: bool,
++) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
++    keep_local = torch.topk(candidate_coeffs.abs(), k=k).indices
+     feature_indices = candidate_indices[keep_local]
+     sparse_decoder = decoder[feature_indices]
+     sparse_coeffs = torch.linalg.lstsq(sparse_decoder.T, vector).solution
+     reconstruction = sparse_decoder.T @ sparse_coeffs
+ 
+-    normalize_weights = bool(cfg.get("normalize_weights", True))
+     weights = sparse_coeffs.clone()
+     strength = 1.0
+     if normalize_weights:
+-        scale = float(weights.abs().max().clamp_min(1e-8))
+-        weights = weights / scale
+-        strength = scale
++        strength = float(weights.abs().max().clamp_min(1e-8))
++        weights = weights / strength
+ 
+-    rows = []
+-    for idx, weight in zip(feature_indices.tolist(), weights.tolist()):
+-        rows.append({
++    rows = [
++        {
+             "feature_idx": int(idx),
+             "weight": float(weight),
++            "raw_coefficient": float(raw_coefficient),
+             "decoder_cosine": float(cosines[int(idx)]),
+             "abs_decoder_cosine": abs(float(cosines[int(idx)])),
+-        })
+-    rows.sort(key=lambda row: abs(row["weight"]), reverse=True)
++        }
++        for idx, weight, raw_coefficient in zip(
++            feature_indices.tolist(), weights.tolist(), sparse_coeffs.tolist()
++        )
++    ]
++    rows.sort(key=lambda row: abs(row["raw_coefficient"]), reverse=True)
+ 
+-    output_dir = ensure_dir(Path(cfg.get("output_dir", "outputs/sae_projection")))
+-    csv_path = output_dir / "sae_feature_projection.csv"
+-    pd.DataFrame(rows).to_csv(csv_path, index=False)
++    metrics = {
++        "selected_k": int(k),
++        "reconstruction_cosine": cosine_similarity(vector, reconstruction),
++        "relative_l2_error": float(
++            (vector - reconstruction).norm() / vector.norm().clamp_min(1e-8)
++        ),
++        "coefficient_l1": float(sparse_coeffs.abs().sum()),
++        "coefficient_l2": float(sparse_coeffs.norm()),
++        "steering_strength": float(strength),
++    }
++    return rows, metrics, {"indices": feature_indices, "coefficients": sparse_coeffs}
+ 
+-    steering_snippet = {
++
++def _steering_snippet(cfg: dict[str, Any], rows: list[dict[str, Any]], strength: float) -> dict[str, Any]:
++    return {
+         "steering": {
+             "enabled": True,
+             "method": "sae",
+@@ -111,21 +99,110 @@ def run(config: dict[str, Any]) -> None:
+             "steer_generated_tokens_only": True,
+         }
+     }
+-    yaml_path = output_dir / "steering_snippet.yaml"
+-    yaml_path.write_text(yaml.safe_dump(steering_snippet, sort_keys=False), encoding="utf-8")
++
++
++def run(config: dict[str, Any]) -> None:
++    cfg = config["sae_projection"]
++    vector, vector_record = _load_vector(cfg["vector_path"], cfg["vector_key"])
++    device_name = str(cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu"))
++    device = torch.device(device_name)
++    dtype_name = str(cfg.get("dtype", "float32"))
++    dtype = getattr(torch, dtype_name)
++
++    sae = load_sae(
++        loader=cfg.get("loader", "sparsify"),
++        sae_repo=cfg["sae_repo"],
++        hookpoint=cfg["hookpoint"],
++        sae_file=cfg.get("sae_file"),
++        sae_id=cfg.get("sae_id"),
++        device=device,
++        dtype=dtype,
++    )
++    decoder = get_decoder_matrix(sae).detach().float().cpu()
++    if decoder.shape[1] != vector.numel():
++        raise ValueError(
++            f"SAE decoder dimension {decoder.shape[1]} does not match vector dimension {vector.numel()}"
++        )
++
++    vector_unit = l2_normalize(vector)
++    decoder_norms = decoder.norm(dim=1).clamp_min(1e-8)
++    cosines = (decoder @ vector_unit) / decoder_norms
++    candidate_k = min(int(cfg.get("candidate_k", 256)), decoder.shape[0])
++    candidate_indices = torch.topk(cosines.abs(), k=candidate_k).indices
++    candidate_decoder = decoder[candidate_indices]
++
++    # Fit once over a broad candidate pool, rank by coefficient magnitude, then
++    # refit nested sparse supports. This exposes whether one feature is enough or
++    # whether the behavior is better represented by a signed feature subspace.
++    candidate_coeffs = torch.linalg.lstsq(candidate_decoder.T, vector).solution
++    requested_ks = cfg.get("selected_ks")
++    if requested_ks is None:
++        requested_ks = [1, 2, 4, 8, int(cfg.get("selected_k", 16)), 32]
++    ks = sorted({min(max(int(k), 1), candidate_k) for k in requested_ks})
++    primary_k = min(max(int(cfg.get("selected_k", 16)), 1), candidate_k)
++    if primary_k not in ks:
++        ks.append(primary_k)
++        ks.sort()
++
++    normalize_weights = bool(cfg.get("normalize_weights", True))
++    output_dir = ensure_dir(Path(cfg.get("output_dir", "outputs/sae_projection")))
++    curve: list[dict[str, Any]] = []
++    primary_rows: list[dict[str, Any]] | None = None
++    primary_metrics: dict[str, Any] | None = None
++
++    for k in ks:
++        rows, metrics, _raw = _projection_for_k(
++            vector=vector,
++            decoder=decoder,
++            cosines=cosines,
++            candidate_indices=candidate_indices,
++            candidate_coeffs=candidate_coeffs,
++            k=k,
++            normalize_weights=normalize_weights,
++        )
++        csv_path = output_dir / f"sae_feature_projection_k{k}.csv"
++        yaml_path = output_dir / f"steering_snippet_k{k}.yaml"
++        pd.DataFrame(rows).to_csv(csv_path, index=False)
++        yaml_path.write_text(
++            yaml.safe_dump(
++                _steering_snippet(cfg, rows, float(metrics["steering_strength"])),
++                sort_keys=False,
++            ),
++            encoding="utf-8",
++        )
++        metrics.update({"csv_path": str(csv_path), "yaml_path": str(yaml_path)})
++        curve.append(metrics)
++        if k == primary_k:
++            primary_rows = rows
++            primary_metrics = metrics
++
++    assert primary_rows is not None and primary_metrics is not None
++    # Backwards-compatible aliases for the primary k.
++    pd.DataFrame(primary_rows).to_csv(output_dir / "sae_feature_projection.csv", index=False)
++    (output_dir / "steering_snippet.yaml").write_text(
++        yaml.safe_dump(
++            _steering_snippet(cfg, primary_rows, float(primary_metrics["steering_strength"])),
++            sort_keys=False,
++        ),
++        encoding="utf-8",
++    )
++    pd.DataFrame(curve).to_csv(output_dir / "projection_curve.csv", index=False)
+ 
+     metrics = {
+         "vector_key": cfg["vector_key"],
+         "hookpoint": cfg["hookpoint"],
+         "candidate_k": candidate_k,
+-        "selected_k": selected_k,
+-        "reconstruction_cosine": cosine_similarity(vector, reconstruction),
+-        "relative_l2_error": float((vector - reconstruction).norm() / vector.norm().clamp_min(1e-8)),
+-        "dense_vector_metadata": {k: v for k, v in vector_record.items() if k != "vector" and not isinstance(v, torch.Tensor)},
+-        "csv_path": str(csv_path),
+-        "yaml_path": str(yaml_path),
++        "primary_selected_k": primary_k,
++        "projection_curve": curve,
++        "dense_vector_metadata": {
++            k: v
++            for k, v in vector_record.items()
++            if k not in {"vector", "raw_vector"} and not isinstance(v, torch.Tensor)
++        },
+     }
+-    (output_dir / "projection_metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
++    (output_dir / "projection_metrics.json").write_text(
++        json.dumps(metrics, indent=2), encoding="utf-8"
++    )
+     print(json.dumps(metrics, indent=2))
+ 
+ 
+diff --git a/src/clarifysae_llama/steering/dense_vector_steerer.py b/src/clarifysae_llama/steering/dense_vector_steerer.py
+index 145692a75adc77cc53cb95cbae09ef391882933e..021392f7a99d4c420bc44a6fe754b80477270a63 100644
+--- a/src/clarifysae_llama/steering/dense_vector_steerer.py
++++ b/src/clarifysae_llama/steering/dense_vector_steerer.py
+@@ -4,7 +4,7 @@ from __future__ import annotations
+ 
+ from dataclasses import dataclass
+ from pathlib import Path
+-from typing import Any
++from typing import Any, Iterable
+ 
+ import torch
+ 
+@@ -25,13 +25,15 @@ class DenseVectorConfig:
+     apply_to: str = "last_position"
+     steer_generated_tokens_only: bool = True
+     normalize_vector: bool = True
+-    scale_mode: str = "absolute"  # absolute | residual_norm_fraction
++    # absolute | residual_norm_fraction | recorded_residual_norm_fraction
++    scale_mode: str = "absolute"
+     norm_cap: float | None = None
+     gate_enabled: bool = False
+     gate_vector_path: str | None = None
+     gate_vector_key: str | None = None
+     gate_threshold: float = 0.0
+-    gate_temperature: float = 1.0
++    # None means use the score scale stored in the vector bundle.
++    gate_temperature: float | None = None
+     gate_mode: str = "hard"  # hard | sigmoid | positive_score
+ 
+ 
+@@ -73,6 +75,7 @@ class DenseVectorSteerer:
+         self.vector = steer_record["vector"].detach().to(dtype=torch.float32).flatten()
+         if config.normalize_vector:
+             self.vector = self.vector / self.vector.norm().clamp_min(1e-8)
++        self.recorded_residual_norm = float(steer_record.get("average_residual_norm", 0.0))
+ 
+         if config.gate_enabled:
+             gate_path = config.gate_vector_path or config.vector_path
+@@ -80,9 +83,20 @@ class DenseVectorSteerer:
+             gate_record = _load_vector_record(gate_path, gate_key)
+             self.gate_vector = gate_record["vector"].detach().to(dtype=torch.float32).flatten()
+             self.gate_vector = self.gate_vector / self.gate_vector.norm().clamp_min(1e-8)
+-            self.gate_bias = float(gate_record.get("probe_bias", gate_record.get("bias", 0.0)))
+-            stored_temperature = float(gate_record.get("probe_temperature", gate_record.get("score_std", 1.0)))
+-            self.gate_temperature = float(config.gate_temperature or stored_temperature or 1.0)
++            self.gate_bias = float(
++                gate_record.get("probe_bias", gate_record.get("score_bias", gate_record.get("bias", 0.0)))
++            )
++            stored_temperature = float(
++                gate_record.get(
++                    "probe_temperature",
++                    gate_record.get("score_temperature", gate_record.get("score_std", 1.0)),
++                )
++            )
++            self.gate_temperature = (
++                stored_temperature if config.gate_temperature is None else float(config.gate_temperature)
++            )
++            if self.gate_temperature <= 0:
++                raise ValueError("gate_temperature must be positive")
+         else:
+             self.gate_vector = None
+             self.gate_bias = 0.0
+@@ -111,19 +125,22 @@ class DenseVectorSteerer:
+         else:
+             raise ValueError(f"Unsupported apply_to mode: {self.config.apply_to}")
+         if self.config.steer_generated_tokens_only and seq_len > 1:
++            # During prefill this selects the final prompt position, which is the
++            # state that produces the first generated token. Subsequent cached
++            # decoding calls contain one token and are selected as well.
+             generated_mask = torch.zeros_like(mask)
+             generated_mask[:, -1] = True
+             mask &= generated_mask
+         return mask
+ 
+     def _compute_gate_weights(self, hidden: torch.Tensor) -> torch.Tensor:
+-        batch_size, seq_len, d_model = hidden.shape
++        batch_size, _seq_len, d_model = hidden.shape
+         if not self.config.gate_enabled:
+             return torch.ones(batch_size, device=hidden.device, dtype=hidden.dtype)
+ 
+-        # The prefill's final prompt position is the decision state. Cache it so
+-        # generation-time calls use the same per-example ambiguity decision.
+-        if seq_len > 1 or self._cached_gate_weights is None:
++        # Compute exactly once per reset. Recomputing whenever seq_len > 1 makes
++        # no-cache generation silently change the gate after every token.
++        if self._cached_gate_weights is None:
+             if self.gate_vector is None or self.gate_vector.numel() != d_model:
+                 raise ValueError(
+                     f"Gate vector dimension {0 if self.gate_vector is None else self.gate_vector.numel()} "
+@@ -154,8 +171,34 @@ class DenseVectorSteerer:
+             "Beam expansion must be an integer multiple of the prefill batch."
+         )
+ 
++    def _scales(self, base: torch.Tensor) -> torch.Tensor:
++        mode = self.config.scale_mode.strip().lower().replace("-", "_")
++        if mode == "absolute":
++            return torch.full(
++                (base.shape[0], 1),
++                float(self.config.strength),
++                device=base.device,
++                dtype=base.dtype,
++            )
++        if mode == "residual_norm_fraction":
++            return float(self.config.strength) * base.norm(dim=-1, keepdim=True)
++        if mode == "recorded_residual_norm_fraction":
++            if self.recorded_residual_norm <= 0:
++                raise ValueError(
++                    "recorded_residual_norm_fraction requires average_residual_norm "
++                    "in the vector record; re-run extraction with the updated code"
++                )
++            return torch.full(
++                (base.shape[0], 1),
++                float(self.config.strength) * self.recorded_residual_norm,
++                device=base.device,
++                dtype=base.dtype,
++            )
++        raise ValueError(f"Unsupported scale_mode: {self.config.scale_mode}")
++
+     @torch.inference_mode()
+     def _hook_fn(self, module, inputs, output):
++        del module, inputs
+         hidden = output[0] if isinstance(output, tuple) else output
+         if hidden is None:
+             return output
+@@ -178,16 +221,7 @@ class DenseVectorSteerer:
+         seq_idx = positions[:, 1]
+         base = updated[batch_idx, seq_idx, :]
+ 
+-        scale_mode = self.config.scale_mode.strip().lower().replace("-", "_")
+-        if scale_mode == "absolute":
+-            scales = torch.full(
+-                (base.shape[0], 1), float(self.config.strength), device=hidden.device, dtype=hidden.dtype
+-            )
+-        elif scale_mode == "residual_norm_fraction":
+-            scales = float(self.config.strength) * base.norm(dim=-1, keepdim=True)
+-        else:
+-            raise ValueError(f"Unsupported scale_mode: {self.config.scale_mode}")
+-        scales = scales * gate_weights[batch_idx].unsqueeze(-1)
++        scales = self._scales(base) * gate_weights[batch_idx].unsqueeze(-1)
+         delta = scales * vector.unsqueeze(0)
+ 
+         if self.config.norm_cap is not None:
+@@ -199,3 +233,38 @@ class DenseVectorSteerer:
+         if isinstance(output, tuple):
+             return (updated,) + output[1:]
+         return updated
++
++
++class MultiLayerDenseVectorSteerer:
++    """Attach one dense vector per layer, as in multi-layer activation steering.
++
++    Each child has its own layer-specific vector. For the cleanest Anthropic-style
++    replication use unconditional children. Probe-gated experiments are usually
++    easier to interpret with a single decision layer, because independently
++    gating every layer can yield inconsistent decisions.
++    """
++
++    def __init__(
++        self,
++        model,
++        model_device: torch.device,
++        dtype: torch.dtype,
++        configs: Iterable[DenseVectorConfig],
++    ):
++        self.steerers = [
++            DenseVectorSteerer(model, model_device, dtype, config) for config in configs
++        ]
++        if not self.steerers:
++            raise ValueError("MultiLayerDenseVectorSteerer requires at least one layer config")
++
++    def attach(self) -> None:
++        for steerer in self.steerers:
++            steerer.attach()
++
++    def detach(self) -> None:
++        for steerer in reversed(self.steerers):
++            steerer.detach()
++
++    def reset(self) -> None:
++        for steerer in self.steerers:
++            steerer.reset()
+diff --git a/tests/test_concept_vectors.py b/tests/test_concept_vectors.py
+index 8819d2a8f61f611ade87fbabb52e7a36b5e5a343..e9cecf27240c7aa936a0f9ba722a9b16f8a873ad 100644
+--- a/tests/test_concept_vectors.py
++++ b/tests/test_concept_vectors.py
+@@ -1,6 +1,8 @@
+ import torch
+ 
+ from clarifysae_llama.discovery.concept_vectors import (
++    binary_score_diagnostics,
++    calibrate_probe_direction,
+     difference_in_means,
+     fit_ridge_probe,
+     paired_difference_in_means,
+@@ -38,3 +40,15 @@ def test_neutral_pc_removal():
+     cleaned = remove_subspace(torch.tensor([1.0, 1.0]), pcs)
+     assert abs(float(cleaned[0])) < 0.2
+     assert float(cleaned[1]) > 0.9
++
++
++def test_recalibrate_after_projection():
++    pos = torch.tensor([[3.0, 2.0], [2.5, 1.5]])
++    neg = torch.tensor([[1.0, -2.0], [0.5, -1.5]])
++    # Imagine the first coordinate was removed as a nuisance PC.
++    cleaned = torch.tensor([0.0, 1.0])
++    probe = calibrate_probe_direction(cleaned, pos, neg)
++    diagnostics = binary_score_diagnostics(probe.direction, probe.bias, pos, neg)
++    assert probe.score_mean_positive > 0
++    assert probe.score_mean_negative < 0
++    assert diagnostics["auroc"] == 1.0
+diff --git a/tests/test_dense_vector_steerer.py b/tests/test_dense_vector_steerer.py
+index 33822c07913644340c51c38a074d94475e5bf360..fbc5eb32f28d8599c267a5a33de404ee71778112 100644
+--- a/tests/test_dense_vector_steerer.py
++++ b/tests/test_dense_vector_steerer.py
+@@ -30,8 +30,12 @@ def _bundle(tmp_path: Path) -> str:
+     path = tmp_path / "vectors.pt"
+     torch.save({
+         "vectors": {
+-            "steer": {"vector": torch.tensor([1.0, 0.0])},
+-            "gate": {"vector": torch.tensor([0.0, 1.0]), "probe_bias": 0.0},
++            "steer": {"vector": torch.tensor([1.0, 0.0]), "average_residual_norm": 10.0},
++            "gate": {
++                "vector": torch.tensor([0.0, 1.0]),
++                "probe_bias": 0.0,
++                "probe_temperature": 2.5,
++            },
+         }
+     }, path)
+     return str(path)
+@@ -77,3 +81,50 @@ def test_hard_gate_blocks_clear_example(tmp_path):
+         steerer.detach()
+     assert torch.allclose(y[0, -1], torch.tensor([1.0, 1.0]))
+     assert torch.allclose(y[1, -1], torch.tensor([0.0, -1.0]))
++
++
++def test_gate_is_cached_even_for_no_cache_full_sequence_calls(tmp_path):
++    model = DummyModel()
++    path = _bundle(tmp_path)
++    steerer = DenseVectorSteerer(
++        model, torch.device("cpu"), torch.float32,
++        DenseVectorConfig(
++            vector_path=path, vector_key="steer", hookpoint="model.layers.0",
++            strength=1.0, apply_to="last_position", steer_generated_tokens_only=False,
++            gate_enabled=True, gate_vector_key="gate", gate_mode="hard",
++        ),
++    )
++    steerer.attach()
++    try:
++        first = model(torch.tensor([[[0.0, 0.0], [0.0, 1.0]]]))
++        # A later full-sequence call has a negative last token. The original
++        # positive prompt decision must remain cached.
++        second = model(torch.tensor([[[0.0, 0.0], [0.0, -1.0], [0.0, -2.0]]]))
++    finally:
++        steerer.detach()
++    assert torch.allclose(first[0, -1], torch.tensor([1.0, 1.0]))
++    assert torch.allclose(second[0, -1], torch.tensor([1.0, -2.0]))
++
++
++def test_stored_gate_temperature_and_recorded_norm_scaling(tmp_path):
++    model = DummyModel()
++    path = _bundle(tmp_path)
++    steerer = DenseVectorSteerer(
++        model, torch.device("cpu"), torch.float32,
++        DenseVectorConfig(
++            vector_path=path, vector_key="steer", hookpoint="model.layers.0",
++            strength=0.2, scale_mode="recorded_residual_norm_fraction",
++            apply_to="last_position", steer_generated_tokens_only=False,
++            gate_enabled=True, gate_vector_key="gate", gate_mode="sigmoid",
++            gate_temperature=None,
++        ),
++    )
++    assert steerer.gate_temperature == 2.5
++    x = torch.tensor([[[0.0, 0.0], [0.0, 0.0]]])
++    steerer.attach()
++    try:
++        y = model(x)
++    finally:
++        steerer.detach()
++    # sigmoid(0)=0.5; strength * recorded norm = 0.2 * 10 = 2.
++    assert torch.allclose(y[0, -1], torch.tensor([1.0, 0.0]))
+diff --git a/tests/test_synthetic_corpus.py b/tests/test_synthetic_corpus.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..0444e63ff9a2938d79be50dee6a6ba0a29a5d115
+--- /dev/null
++++ b/tests/test_synthetic_corpus.py
+@@ -0,0 +1,23 @@
++
++from clarifysae_llama.runners.generate_synthetic_corpus import expand_scenario
++
++
++def test_expand_scenario_emits_factorized_and_neutral_rows():
++    scenario = {
++        "context": "There are red and blue cups on the counter.",
++        "ambiguous_instruction": "Put a cup on the table.",
++        "clear_instruction": "Put the blue cup on the table.",
++        "missing_slot": "cup color",
++        "targeted_question": "Which cup color should I use?",
++        "direct_response": "I will put the blue cup on the table.",
++        "guessing_response": "I will put the red cup on the table.",
++        "generic_question": "Could you provide more details?",
++        "unnecessary_question": "Should I do that now?",
++    }
++    rows = expand_scenario("s1", "robot manipulation", scenario, split="dev")
++    assert len(rows) == 10
++    concepts = {row["concept"] for row in rows}
++    assert "ask_trajectory" in concepts
++    assert "neutral_prompt" in concepts
++    assert "neutral_response" in concepts
++    assert all(row["split"] == "dev" for row in rows)

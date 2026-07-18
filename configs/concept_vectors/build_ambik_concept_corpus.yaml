@@ -1,0 +1,11 @@
+experiment_name: build_ambik_concept_corpus
+seed: 42
+
+ambik_concept_corpus:
+  input_path: data/raw/ambik/ambik_test_400.csv
+  output_path: outputs/ambik/ambik_concept_corpus.jsonl
+  limit: null
+  generic_question: Could you provide more details?
+  splits:
+    train: 0.70
+    dev: 0.15

@@ -172,6 +172,79 @@ def fit_ridge_probe(
     )
 
 
+
+def calibrate_probe_direction(
+    direction: torch.Tensor,
+    positive: torch.Tensor,
+    negative: torch.Tensor,
+    *,
+    normalize_direction: bool = True,
+) -> ProbeResult:
+    """Calibrate a fixed linear direction as a binary probe.
+
+    This is useful after transforming a fitted probe direction, for example by
+    projecting neutral principal components out of it.  The decision threshold
+    and score scale must be recomputed in the transformed coordinate system;
+    reusing the pre-projection bias would silently miscalibrate gating.
+    """
+
+    positive = _as_float_matrix(positive, "positive")
+    negative = _as_float_matrix(negative, "negative")
+    direction = direction.detach().to(dtype=torch.float32).flatten()
+    if positive.shape[1] != negative.shape[1] or positive.shape[1] != direction.numel():
+        raise ValueError("direction, positive, and negative must share the same hidden dimension")
+    if float(direction.norm()) <= 0:
+        raise ValueError("direction must have non-zero norm")
+
+    if normalize_direction:
+        direction = l2_normalize(direction)
+    raw_pos = positive @ direction
+    raw_neg = negative @ direction
+    threshold = 0.5 * (float(raw_pos.mean()) + float(raw_neg.mean()))
+    bias = -threshold
+    pos_scores = raw_pos + bias
+    neg_scores = raw_neg + bias
+    all_scores = torch.cat([pos_scores, neg_scores], dim=0)
+    return ProbeResult(
+        direction=direction,
+        bias=float(bias),
+        score_mean_positive=float(pos_scores.mean()),
+        score_mean_negative=float(neg_scores.mean()),
+        score_std=float(all_scores.std(unbiased=False).clamp_min(1e-8)),
+    )
+
+
+def binary_score_diagnostics(
+    direction: torch.Tensor,
+    bias: float,
+    positive: torch.Tensor,
+    negative: torch.Tensor,
+) -> dict[str, float]:
+    """Return dependency-free diagnostics for a fixed binary linear score."""
+
+    positive = _as_float_matrix(positive, "positive")
+    negative = _as_float_matrix(negative, "negative")
+    direction = direction.detach().to(dtype=torch.float32).flatten()
+    if positive.shape[1] != negative.shape[1] or positive.shape[1] != direction.numel():
+        raise ValueError("direction, positive, and negative must share the same hidden dimension")
+
+    pos_scores = positive @ direction + float(bias)
+    neg_scores = negative @ direction + float(bias)
+    # Pairwise definition of AUROC, including half credit for ties. This avoids
+    # a scikit-learn dependency and is exact for the small discovery corpora.
+    comparisons = pos_scores[:, None] - neg_scores[None, :]
+    auroc = ((comparisons > 0).float() + 0.5 * (comparisons == 0).float()).mean()
+    tpr = (pos_scores > 0).float().mean()
+    tnr = (neg_scores <= 0).float().mean()
+    return {
+        "auroc": float(auroc),
+        "balanced_accuracy": float(0.5 * (tpr + tnr)),
+        "positive_mean": float(pos_scores.mean()),
+        "negative_mean": float(neg_scores.mean()),
+        "margin": float(pos_scores.mean() - neg_scores.mean()),
+        "score_std": float(torch.cat([pos_scores, neg_scores]).std(unbiased=False).clamp_min(1e-8)),
+    }
+
 def principal_components_for_variance(
     neutral: torch.Tensor,
     *,

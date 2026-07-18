@@ -22,6 +22,10 @@ synthetic_corpus:
   output_path: outputs/synthetic/clarification_counterfactuals.jsonl
   scenarios_per_topic: 12
   max_retries: 2
+  strict_validation: true
+  splits:
+    train: 0.70
+    dev: 0.15
   topics:
     - cooking
     - household organization
