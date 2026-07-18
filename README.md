@@ -192,3 +192,12 @@ scaling, and gate caching. They do not replace GPU-scale end-to-end validation.
 See `docs/REPOSITORY_SCOPE.md` for the complete curation policy. In brief, the
 copy excludes old generated results, visualization archives, duplicate configs,
 notebooks, patch files, and `*.egg-info` build artifacts.
+
+## One-command staged runner
+
+To run the dense clarification study without manually editing YAML files, follow
+`docs/RUN_DENSE_CLARIFICATION_EXPERIMENTS.md` or start with:
+
+```bash
+bash scripts/run_dense_clarification_pipeline.sh help
+```

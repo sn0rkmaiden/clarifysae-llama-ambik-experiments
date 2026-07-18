@@ -1,0 +1,1212 @@
+diff --git a/README.md b/README.md
+index 03a9e55..cf2d87a 100644
+--- a/README.md
++++ b/README.md
+@@ -192,3 +192,12 @@ scaling, and gate caching. They do not replace GPU-scale end-to-end validation.
+ See `docs/REPOSITORY_SCOPE.md` for the complete curation policy. In brief, the
+ copy excludes old generated results, visualization archives, duplicate configs,
+ notebooks, patch files, and `*.egg-info` build artifacts.
++
++## One-command staged runner
++
++To run the dense clarification study without manually editing YAML files, follow
++`docs/RUN_DENSE_CLARIFICATION_EXPERIMENTS.md` or start with:
++
++```bash
++bash scripts/run_dense_clarification_pipeline.sh help
++```
+diff --git a/docs/RUN_DENSE_CLARIFICATION_EXPERIMENTS.md b/docs/RUN_DENSE_CLARIFICATION_EXPERIMENTS.md
+new file mode 100644
+index 0000000..aaa78c9
+--- /dev/null
++++ b/docs/RUN_DENSE_CLARIFICATION_EXPERIMENTS.md
+@@ -0,0 +1,110 @@
++# Run the dense clarification experiments without editing YAML
++
++All generated configurations are created automatically under `configs/local/`.
++You only need to place the two AmbiK CSV files in the expected directory and run
++shell commands.
++
++## Required data
++
++```text
++data/raw/ambik/ambik_calib_100.csv
++data/raw/ambik/ambik_test_400.csv
++```
++
++The CSVs must contain `environment_full`, `ambiguity_type`, `ambiguous_task`,
++`unambiguous_direct`, `question`, and `answer`. The benchmark-derived vector arm
++also requires `plan_for_clear_task`.
++
++## Recommended command sequence
++
++Run these one at a time. Each command can be restarted after a completed stage.
++
++```bash
++bash scripts/run_dense_clarification_pipeline.sh setup
++bash scripts/run_dense_clarification_pipeline.sh prepare
++bash scripts/run_dense_clarification_pipeline.sh preflight
++bash scripts/run_dense_clarification_pipeline.sh baseline-calib
++bash scripts/run_dense_clarification_pipeline.sh smoke
++bash scripts/run_dense_clarification_pipeline.sh full-vectors
++bash scripts/run_dense_clarification_pipeline.sh dense-sweep
++bash scripts/run_dense_clarification_pipeline.sh gate-sweep
++bash scripts/run_dense_clarification_pipeline.sh final-test
++bash scripts/run_dense_clarification_pipeline.sh ambik-vectors
++bash scripts/run_dense_clarification_pipeline.sh ambik-final-test
++bash scripts/run_dense_clarification_pipeline.sh project-sae
++bash scripts/run_dense_clarification_pipeline.sh summarize
++```
++
++The first five stages can be started as one command:
++
++```bash
++bash scripts/run_dense_clarification_pipeline.sh phase1
++```
++
++The full synthetic vector and calibration sweeps can be started as:
++
++```bash
++bash scripts/run_dense_clarification_pipeline.sh phase2
++```
++
++`all` runs every stage, including final held-out evaluations. It can take a long
++time and should be used only when the smoke run has been inspected:
++
++```bash
++bash scripts/run_dense_clarification_pipeline.sh all
++```
++
++## What each stage tests
++
++| Command | Scientific question |
++|---|---|
++| `baseline-calib` | How often does the unsteered model ask on ambiguous and paired clear prompts? |
++| `smoke` | Does corpus generation and vector extraction work, and are the concepts decodable on held-out topics? |
++| `full-vectors` | Can matched synthetic counterfactuals produce stable ambiguity, ask-trajectory, targeting, and restraint representations? |
++| `dense-sweep` | Does the response-side `ask_trajectory` direction causally change question asking, and which sign/strength is useful? |
++| `gate-sweep` | Does the prompt-side ambiguity probe reduce unnecessary questions while preserving useful clarification? |
++| `final-test` | Do the selected synthetic-vector settings transfer to the held-out AmbiK test set without selecting on it? |
++| `ambik-vectors` | Do benchmark-derived vectors reproduce the synthetic-corpus result without synthetic-prose dependence? |
++| `ambik-final-test` | Do benchmark-derived vectors transfer to the source examples held out from their internal train/dev split? |
++| `project-sae` | Can one SAE feature reproduce the successful dense direction, or are 2-32 signed features required? |
++
++## Automatic model selection
++
++The script makes three development-only selections and records every ranking:
++
++1. **Layer:** maximize the weaker of held-out AUROC for
++   `ambiguity_state/ridge_probe` and `ask_trajectory/paired_difference`.
++2. **Steering strength:** maximize
++   `resolved_proxy_any_ambiguous - 0.50 * overasking_rate_clear - 0.25 * invalid_json_rate`.
++3. **Gate threshold:** use the same utility after fixing the selected strength.
++
++Change the penalties without editing files:
++
++```bash
++OVERASK_PENALTY=1.0 INVALID_JSON_PENALTY=0.5 \
++  bash scripts/run_dense_clarification_pipeline.sh dense-sweep
++
++OVERASK_PENALTY=1.0 INVALID_JSON_PENALTY=0.5 \
++  bash scripts/run_dense_clarification_pipeline.sh gate-sweep
++```
++
++Selection artifacts are stored in `outputs/selection/`. Final test configurations
++are generated only from those development selections.
++
++## Main files to inspect
++
++```text
++outputs/selection/synthetic_layer_selection.csv
++outputs/selection/synthetic_strength_ranking.csv
++outputs/selection/synthetic_gate_ranking.csv
++outputs/selection/*_summary.json
++outputs/sweeps/*/aggregate_summary.csv
++outputs/sweeps/*/category_summary.csv
++outputs/sweeps/*/predictions/
++```
++
++Use the status command at any time:
++
++```bash
++bash scripts/run_dense_clarification_pipeline.sh status
++```
+diff --git a/scripts/prepare_dense_experiment_configs.py b/scripts/prepare_dense_experiment_configs.py
+new file mode 100644
+index 0000000..d7a8463
+--- /dev/null
++++ b/scripts/prepare_dense_experiment_configs.py
+@@ -0,0 +1,197 @@
++from __future__ import annotations
++
++import argparse
++import json
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++
++def load_yaml(path: Path) -> dict[str, Any]:
++    with path.open("r", encoding="utf-8") as handle:
++        value = yaml.safe_load(handle)
++    if not isinstance(value, dict):
++        raise TypeError(f"{path} does not contain a YAML mapping")
++    return value
++
++
++def save_yaml(path: Path, value: dict[str, Any]) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    with path.open("w", encoding="utf-8") as handle:
++        yaml.safe_dump(value, handle, sort_keys=False, allow_unicode=True)
++    print(f"Wrote {path}")
++
++
++def load_json(path: str | None) -> dict[str, Any]:
++    if not path:
++        return {}
++    return json.loads(Path(path).read_text(encoding="utf-8"))
++
++
++def write_static(root: Path) -> None:
++    local = root / "configs/local"
++
++    baseline = load_yaml(
++        root / "configs/baselines/baseline_llama32_1b_instruct_100.yaml"
++    )
++    baseline["experiment_name"] = "baseline_llama32_1b_paired_calib"
++    baseline["dataset"]["path"] = "data/raw/ambik/ambik_calib_100_paired.csv"
++    baseline["dataset"]["limit"] = None
++    save_yaml(local / "baseline_llama32_1b_paired_calib.yaml", baseline)
++
++    baseline_test = json.loads(json.dumps(baseline))
++    baseline_test["experiment_name"] = "baseline_llama32_1b_paired_test"
++    baseline_test["dataset"]["path"] = "data/raw/ambik/ambik_test_400_paired.csv"
++    save_yaml(local / "baseline_llama32_1b_paired_test.yaml", baseline_test)
++
++    baseline_internal = json.loads(json.dumps(baseline))
++    baseline_internal["experiment_name"] = "baseline_llama32_1b_internal_test"
++    baseline_internal["dataset"]["path"] = (
++        "data/raw/ambik/ambik_test_400_internal_test_paired.csv"
++    )
++    save_yaml(local / "baseline_llama32_1b_internal_test.yaml", baseline_internal)
++
++    synthetic = load_yaml(
++        root / "configs/synthetic/generate_clarification_counterfactuals.yaml"
++    )
++    synthetic["experiment_name"] = "synthetic_clarification_counterfactuals_smoke"
++    synthetic["generation"]["max_new_tokens"] = 384
++    synthetic["synthetic_corpus"]["output_path"] = (
++        "outputs/synthetic/clarification_counterfactuals_smoke.jsonl"
++    )
++    synthetic["synthetic_corpus"]["scenarios_per_topic"] = 1
++    save_yaml(local / "generate_clarification_counterfactuals_smoke.yaml", synthetic)
++
++    extraction = load_yaml(
++        root / "configs/concept_vectors/extract_clarification_vectors.yaml"
++    )
++    extraction["experiment_name"] = "extract_clarification_vectors_smoke"
++    extraction["concept_discovery"]["dataset_path"] = (
++        "outputs/synthetic/clarification_counterfactuals_smoke.jsonl"
++    )
++    extraction["concept_discovery"]["output_path"] = (
++        "outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.pt"
++    )
++    extraction["concept_discovery"]["batch_size"] = 2
++    save_yaml(local / "extract_clarification_vectors_smoke.yaml", extraction)
++
++
++def write_dense(
++    root: Path,
++    *,
++    source: str,
++    vector_path: str,
++    selection_path: Path,
++    strength_selection_path: str | None,
++    gate_selection_path: str | None,
++    calib_dataset: str,
++    test_dataset: str,
++) -> None:
++    selection = load_json(str(selection_path))
++    strength_selection = load_json(strength_selection_path)
++    gate_selection = load_json(gate_selection_path)
++
++    hookpoint = str(selection["hookpoint"])
++    ask_key = str(selection["ask_vector_key"])
++    gate_key = str(selection["gate_vector_key"])
++    strength = float(strength_selection.get("value", 0.02))
++    threshold = float(gate_selection.get("value", 0.0))
++    local = root / "configs/local"
++
++    base = load_yaml(root / "configs/steering/dense_vector_probe_gated.yaml")
++    base["steering"]["vector_path"] = vector_path
++    base["steering"]["vector_key"] = ask_key
++    base["steering"]["hookpoint"] = hookpoint
++    base["steering"]["module_path"] = hookpoint
++    base["steering"]["strength"] = strength
++    base["steering"]["gate"]["vector_path"] = vector_path
++    base["steering"]["gate"]["vector_key"] = gate_key
++    base["steering"]["gate"]["threshold"] = threshold
++    base["dataset"]["path"] = calib_dataset
++    base["dataset"]["limit"] = None
++
++    unconditional = json.loads(json.dumps(base))
++    unconditional["experiment_name"] = f"{source}_dense_unconditional_calib"
++    unconditional["steering"]["gate"]["enabled"] = False
++    save_yaml(local / f"{source}_dense_unconditional.yaml", unconditional)
++
++    strength_sweep = load_yaml(
++        root / "configs/steering/sweep_dense_vector_strengths.yaml"
++    )
++    strength_sweep["experiment_name"] = f"{source}_dense_unconditional_strength_sweep"
++    strength_sweep["base_config"] = (
++        f"configs/local/{source}_dense_unconditional.yaml"
++    )
++    save_yaml(local / f"{source}_sweep_dense_strengths.yaml", strength_sweep)
++
++    gated = json.loads(json.dumps(base))
++    gated["experiment_name"] = f"{source}_dense_gated_calib"
++    gated["steering"]["gate"]["enabled"] = True
++    save_yaml(local / f"{source}_dense_gated.yaml", gated)
++
++    gate_sweep = load_yaml(
++        root / "configs/steering/sweep_dense_gate_thresholds.yaml"
++    )
++    gate_sweep["experiment_name"] = f"{source}_dense_gate_threshold_sweep"
++    gate_sweep["base_config"] = f"configs/local/{source}_dense_gated.yaml"
++    save_yaml(local / f"{source}_sweep_gate_thresholds.yaml", gate_sweep)
++
++    final_unconditional = json.loads(json.dumps(unconditional))
++    final_unconditional["experiment_name"] = f"{source}_dense_unconditional_test"
++    final_unconditional["dataset"]["path"] = test_dataset
++    final_unconditional["steering"]["strength"] = strength
++    save_yaml(local / f"{source}_dense_unconditional_test.yaml", final_unconditional)
++
++    final_gated = json.loads(json.dumps(gated))
++    final_gated["experiment_name"] = f"{source}_dense_gated_test"
++    final_gated["dataset"]["path"] = test_dataset
++    final_gated["steering"]["strength"] = strength
++    final_gated["steering"]["gate"]["threshold"] = threshold
++    save_yaml(local / f"{source}_dense_gated_test.yaml", final_gated)
++
++
++def parse_args() -> argparse.Namespace:
++    parser = argparse.ArgumentParser()
++    subparsers = parser.add_subparsers(dest="command", required=True)
++    static = subparsers.add_parser("static")
++    static.add_argument("--root", default=".")
++
++    dense = subparsers.add_parser("dense")
++    dense.add_argument("--root", default=".")
++    dense.add_argument("--source", required=True)
++    dense.add_argument("--vector-path", required=True)
++    dense.add_argument("--selection", required=True)
++    dense.add_argument("--strength-selection", default=None)
++    dense.add_argument("--gate-selection", default=None)
++    dense.add_argument(
++        "--calib-dataset",
++        default="data/raw/ambik/ambik_calib_100_paired.csv",
++    )
++    dense.add_argument(
++        "--test-dataset",
++        default="data/raw/ambik/ambik_test_400_paired.csv",
++    )
++    return parser.parse_args()
++
++
++def main() -> None:
++    args = parse_args()
++    root = Path(args.root).resolve()
++    if args.command == "static":
++        write_static(root)
++        return
++    write_dense(
++        root,
++        source=args.source,
++        vector_path=args.vector_path,
++        selection_path=Path(args.selection),
++        strength_selection_path=args.strength_selection,
++        gate_selection_path=args.gate_selection,
++        calib_dataset=args.calib_dataset,
++        test_dataset=args.test_dataset,
++    )
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/prepare_dense_experiment_data.py b/scripts/prepare_dense_experiment_data.py
+new file mode 100644
+index 0000000..036ea6a
+--- /dev/null
++++ b/scripts/prepare_dense_experiment_data.py
+@@ -0,0 +1,168 @@
++from __future__ import annotations
++
++import argparse
++import hashlib
++import json
++from pathlib import Path
++
++import pandas as pd
++
++
++REQUIRED_COLUMNS = {
++    "environment_full",
++    "ambiguity_type",
++    "ambiguous_task",
++    "unambiguous_direct",
++    "question",
++    "answer",
++}
++
++
++def split_for_id(value: str, *, train: float, dev: float, seed: int) -> str:
++    digest = hashlib.sha256(f"{seed}:{value}".encode("utf-8")).digest()
++    u = int.from_bytes(digest[:8], "big") / float(2**64)
++    if u < train:
++        return "train"
++    if u < train + dev:
++        return "dev"
++    return "test"
++
++
++def validate(df: pd.DataFrame, path: Path) -> pd.DataFrame:
++    missing = REQUIRED_COLUMNS - set(df.columns)
++    if missing:
++        raise ValueError(f"{path} is missing columns: {sorted(missing)}")
++    result = df.copy()
++    if "id" not in result.columns:
++        result.insert(0, "id", range(len(result)))
++    if "plan_for_clear_task" not in result.columns:
++        result["plan_for_clear_task"] = ""
++    return result
++
++
++def paired_rows(df: pd.DataFrame, *, seed: int, add_internal_split: bool) -> pd.DataFrame:
++    rows: list[dict] = []
++    for position, (_, source_row) in enumerate(df.iterrows()):
++        source = source_row.to_dict()
++        source_id = str(source.get("id", position))
++        source_split = (
++            split_for_id(source_id, train=0.70, dev=0.15, seed=seed)
++            if add_internal_split
++            else "external"
++        )
++
++        ambiguous = dict(source)
++        ambiguous.update(
++            {
++                "id": 2 * position,
++                "source_id": source_id,
++                "source_split": source_split,
++                "pair_variant": "ambiguous",
++            }
++        )
++        rows.append(ambiguous)
++
++        clear = dict(source)
++        clear.update(
++            {
++                "id": 2 * position + 1,
++                "source_id": source_id,
++                "source_split": source_split,
++                "pair_variant": "clear",
++                "ambiguous_task": source["unambiguous_direct"],
++                "ambiguity_type": "unambiguous_direct",
++                "question": "",
++            }
++        )
++        rows.append(clear)
++
++    return pd.DataFrame(rows)
++
++
++def write_pair_files(
++    source_path: Path,
++    destination_path: Path,
++    *,
++    seed: int,
++    add_internal_split: bool,
++) -> dict:
++    source = validate(pd.read_csv(source_path), source_path)
++    paired = paired_rows(source, seed=seed, add_internal_split=add_internal_split)
++    destination_path.parent.mkdir(parents=True, exist_ok=True)
++    paired.to_csv(destination_path, index=False)
++
++    metadata = {
++        "source": str(source_path),
++        "destination": str(destination_path),
++        "source_examples": int(len(source)),
++        "paired_rows": int(len(paired)),
++        "ambiguous_rows": int((paired["pair_variant"] == "ambiguous").sum()),
++        "clear_rows": int((paired["pair_variant"] == "clear").sum()),
++    }
++
++    if add_internal_split:
++        split_counts = paired.groupby("source_split").size().to_dict()
++        metadata["paired_rows_by_internal_split"] = {
++            str(key): int(value) for key, value in split_counts.items()
++        }
++        internal_test = paired[paired["source_split"] == "test"].copy()
++        internal_test_path = destination_path.with_name(
++            destination_path.stem.replace("_paired", "_internal_test_paired")
++            + destination_path.suffix
++        )
++        internal_test.to_csv(internal_test_path, index=False)
++        metadata["internal_test_destination"] = str(internal_test_path)
++        metadata["internal_test_rows"] = int(len(internal_test))
++
++    destination_path.with_suffix(".metadata.json").write_text(
++        json.dumps(metadata, indent=2), encoding="utf-8"
++    )
++    return metadata
++
++
++def parse_args() -> argparse.Namespace:
++    parser = argparse.ArgumentParser()
++    parser.add_argument(
++        "--calib",
++        default="data/raw/ambik/ambik_calib_100.csv",
++    )
++    parser.add_argument(
++        "--test",
++        default="data/raw/ambik/ambik_test_400.csv",
++    )
++    parser.add_argument("--seed", type=int, default=42)
++    return parser.parse_args()
++
++
++def main() -> None:
++    args = parse_args()
++    calib = Path(args.calib)
++    test = Path(args.test)
++    if not calib.exists():
++        raise FileNotFoundError(
++            f"Missing {calib}. Copy the AmbiK calibration CSV to this location."
++        )
++    if not test.exists():
++        raise FileNotFoundError(
++            f"Missing {test}. Copy the AmbiK test CSV to this location."
++        )
++
++    reports = [
++        write_pair_files(
++            calib,
++            calib.with_name("ambik_calib_100_paired.csv"),
++            seed=args.seed,
++            add_internal_split=False,
++        ),
++        write_pair_files(
++            test,
++            test.with_name("ambik_test_400_paired.csv"),
++            seed=args.seed,
++            add_internal_split=True,
++        ),
++    ]
++    print(json.dumps(reports, indent=2))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/run_dense_clarification_pipeline.sh b/scripts/run_dense_clarification_pipeline.sh
+new file mode 100755
+index 0000000..8d0b3a7
+--- /dev/null
++++ b/scripts/run_dense_clarification_pipeline.sh
+@@ -0,0 +1,416 @@
++#!/usr/bin/env bash
++set -Eeuo pipefail
++
++ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++cd "$ROOT"
++
++VENV_DIR="${VENV_DIR:-$ROOT/.venv}"
++PY="$VENV_DIR/bin/python"
++PIP="$VENV_DIR/bin/pip"
++OVERASK_PENALTY="${OVERASK_PENALTY:-0.50}"
++INVALID_JSON_PENALTY="${INVALID_JSON_PENALTY:-0.25}"
++
++export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
++export PYTHONUNBUFFERED=1
++
++usage() {
++  cat <<'EOF'
++ClarifySAE dense clarification experiment runner
++
++Run from the repository root:
++
++  bash scripts/run_dense_clarification_pipeline.sh <command>
++
++Commands:
++  setup              Create .venv, install the package, and run unit tests.
++  preflight          Validate configs, dependencies, datasets, and CUDA.
++  prepare            Build paired AmbiK files and all static local configs.
++  baseline-calib     Run the paired calibration baseline.
++  smoke              Generate a small corpus and extract smoke-test vectors.
++  full-vectors       Generate the full synthetic corpus and extract vectors.
++  dense-sweep        Select a joint layer and sweep unconditional strengths.
++  gate-sweep         Fix the selected strength and sweep gate thresholds.
++  final-test         Run baseline, unconditional, and gated systems on held-out test data.
++  ambik-vectors      Build benchmark-derived vectors and run their calibration sweeps.
++  ambik-final-test   Run benchmark-derived baseline/unconditional/gated internal-test evaluations.
++  project-sae        Project the selected synthetic dense direction to 1-32 SAE features.
++  summarize          Print paths to all selection and summary tables.
++  phase1             setup + prepare + preflight + baseline-calib + smoke.
++  phase2             full-vectors + dense-sweep + gate-sweep.
++  all                phase1 + phase2 + final-test + ambik-vectors + ambik-final-test + project-sae.
++  status             Show which required and generated files currently exist.
++  help               Show this message.
++
++Environment variables:
++  VENV_DIR               Virtual environment path; default: .venv
++  OVERASK_PENALTY        Selection penalty for clear-input over-asking; default: 0.50
++  INVALID_JSON_PENALTY   Selection penalty for invalid output JSON; default: 0.25
++  HF_TOKEN               Hugging Face token when a model/checkpoint requires it
++
++The script never modifies the bundled experiment templates. It writes generated
++configs under configs/local/ and all results under outputs/.
++EOF
++}
++
++say() {
++  printf '\n\033[1;34m==> %s\033[0m\n' "$*"
++}
++
++fail() {
++  printf '\nERROR: %s\n' "$*" >&2
++  exit 1
++}
++
++require_python() {
++  [[ -x "$PY" ]] || fail "Virtual environment is missing. Run: bash scripts/run_dense_clarification_pipeline.sh setup"
++}
++
++require_file() {
++  [[ -f "$1" ]] || fail "Missing required file: $1"
++}
++
++run_setup() {
++  say "Creating virtual environment"
++  python3 -m venv "$VENV_DIR"
++  "$PY" -m pip install --upgrade pip
++  "$PIP" install -e .
++  say "Running unit tests"
++  "$PY" -m pytest -q
++}
++
++run_preflight() {
++  require_python
++  mkdir -p outputs
++  "$PY" scripts/preflight_experiments.py --output outputs/preflight_report.json
++}
++
++run_prepare() {
++  require_python
++  require_file data/raw/ambik/ambik_calib_100.csv
++  require_file data/raw/ambik/ambik_test_400.csv
++  say "Creating paired ambiguous/clear AmbiK files"
++  "$PY" scripts/prepare_dense_experiment_data.py
++  say "Creating local experiment configs"
++  "$PY" scripts/prepare_dense_experiment_configs.py static --root .
++}
++
++run_baseline_calib() {
++  require_python
++  require_file data/raw/ambik/ambik_calib_100_paired.csv
++  require_file configs/local/baseline_llama32_1b_paired_calib.yaml
++  "$PY" -m clarifysae_llama.runners.run_eval \
++    --config configs/local/baseline_llama32_1b_paired_calib.yaml
++  "$PY" scripts/summarize_selective_clarification.py run \
++    --example-metrics outputs/baseline_llama32_1b_paired_calib/metrics/example_metrics.csv \
++    --output outputs/selection/baseline_calib_summary.json
++}
++
++run_smoke() {
++  require_python
++  require_file configs/local/generate_clarification_counterfactuals_smoke.yaml
++  say "Generating 1 synthetic scenario per topic"
++  "$PY" -m clarifysae_llama.runners.generate_synthetic_corpus \
++    --config configs/local/generate_clarification_counterfactuals_smoke.yaml
++  say "Extracting smoke-test vectors"
++  "$PY" -m clarifysae_llama.runners.extract_concept_vectors \
++    --config configs/local/extract_clarification_vectors_smoke.yaml
++  say "Ranking smoke-test layers"
++  "$PY" scripts/select_dense_layer.py \
++    --diagnostics outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.csv \
++    --output outputs/selection/smoke_layer_selection.json
++}
++
++run_full_vectors() {
++  require_python
++  say "Generating the full synthetic matched corpus"
++  "$PY" -m clarifysae_llama.runners.generate_synthetic_corpus \
++    --config configs/synthetic/generate_clarification_counterfactuals.yaml
++  say "Extracting full synthetic dense vectors and probes"
++  "$PY" -m clarifysae_llama.runners.extract_concept_vectors \
++    --config configs/concept_vectors/extract_clarification_vectors.yaml
++}
++
++prepare_dense_configs() {
++  local source="$1"
++  local vector_path="$2"
++  local selection="$3"
++  local test_dataset="$4"
++  local strength_selection="${5:-}"
++  local gate_selection="${6:-}"
++
++  local args=(
++    scripts/prepare_dense_experiment_configs.py dense
++    --root .
++    --source "$source"
++    --vector-path "$vector_path"
++    --selection "$selection"
++    --calib-dataset data/raw/ambik/ambik_calib_100_paired.csv
++    --test-dataset "$test_dataset"
++  )
++  if [[ -n "$strength_selection" ]]; then
++    args+=(--strength-selection "$strength_selection")
++  fi
++  if [[ -n "$gate_selection" ]]; then
++    args+=(--gate-selection "$gate_selection")
++  fi
++  "$PY" "${args[@]}"
++}
++
++run_dense_sweep_for_source() {
++  local source="$1"
++  local vector_path="$2"
++  local diagnostics="$3"
++  local selection="$4"
++  local test_dataset="$5"
++
++  require_file "$vector_path"
++  require_file "$diagnostics"
++  say "Selecting one joint layer for ambiguity detection and ask steering ($source)"
++  "$PY" scripts/select_dense_layer.py \
++    --diagnostics "$diagnostics" \
++    --output "$selection"
++
++  prepare_dense_configs "$source" "$vector_path" "$selection" "$test_dataset"
++
++  say "Sweeping unconditional dense-vector strengths ($source)"
++  "$PY" -m clarifysae_llama.runners.sweep \
++    --config "configs/local/${source}_sweep_dense_strengths.yaml"
++
++  local sweep_dir="outputs/sweeps/${source}_dense_unconditional_strength_sweep"
++  "$PY" scripts/summarize_selective_clarification.py sweep \
++    --manifest "$sweep_dir/manifest.csv" \
++    --output-csv "outputs/selection/${source}_strength_ranking.csv" \
++    --selection-json "outputs/selection/${source}_strength_selection.json" \
++    --overask-penalty "$OVERASK_PENALTY" \
++    --invalid-json-penalty "$INVALID_JSON_PENALTY"
++
++  prepare_dense_configs \
++    "$source" "$vector_path" "$selection" "$test_dataset" \
++    "outputs/selection/${source}_strength_selection.json"
++}
++
++run_gate_sweep_for_source() {
++  local source="$1"
++  local vector_path="$2"
++  local selection="$3"
++  local test_dataset="$4"
++  require_file "outputs/selection/${source}_strength_selection.json"
++
++  prepare_dense_configs \
++    "$source" "$vector_path" "$selection" "$test_dataset" \
++    "outputs/selection/${source}_strength_selection.json"
++
++  say "Sweeping ambiguity-gate thresholds ($source)"
++  "$PY" -m clarifysae_llama.runners.sweep \
++    --config "configs/local/${source}_sweep_gate_thresholds.yaml"
++
++  local sweep_dir="outputs/sweeps/${source}_dense_gate_threshold_sweep"
++  "$PY" scripts/summarize_selective_clarification.py sweep \
++    --manifest "$sweep_dir/manifest.csv" \
++    --output-csv "outputs/selection/${source}_gate_ranking.csv" \
++    --selection-json "outputs/selection/${source}_gate_selection.json" \
++    --overask-penalty "$OVERASK_PENALTY" \
++    --invalid-json-penalty "$INVALID_JSON_PENALTY"
++
++  prepare_dense_configs \
++    "$source" "$vector_path" "$selection" "$test_dataset" \
++    "outputs/selection/${source}_strength_selection.json" \
++    "outputs/selection/${source}_gate_selection.json"
++}
++
++run_dense_sweep() {
++  require_python
++  run_dense_sweep_for_source \
++    synthetic \
++    outputs/concept_vectors/llama32_1b_clarification_vectors.pt \
++    outputs/concept_vectors/llama32_1b_clarification_vectors.csv \
++    outputs/selection/synthetic_layer_selection.json \
++    data/raw/ambik/ambik_test_400_paired.csv
++}
++
++run_gate_sweep() {
++  require_python
++  run_gate_sweep_for_source \
++    synthetic \
++    outputs/concept_vectors/llama32_1b_clarification_vectors.pt \
++    outputs/selection/synthetic_layer_selection.json \
++    data/raw/ambik/ambik_test_400_paired.csv
++}
++
++run_final_test() {
++  require_python
++  require_file outputs/selection/synthetic_gate_selection.json
++  say "Running held-out baseline"
++  "$PY" -m clarifysae_llama.runners.run_eval \
++    --config configs/local/baseline_llama32_1b_paired_test.yaml
++  say "Running held-out unconditional dense steering"
++  "$PY" -m clarifysae_llama.runners.run_eval \
++    --config configs/local/synthetic_dense_unconditional_test.yaml
++  say "Running held-out probe-gated dense steering"
++  "$PY" -m clarifysae_llama.runners.run_eval \
++    --config configs/local/synthetic_dense_gated_test.yaml
++
++  for run in \
++    baseline_llama32_1b_paired_test \
++    synthetic_dense_unconditional_test \
++    synthetic_dense_gated_test; do
++    "$PY" scripts/summarize_selective_clarification.py run \
++      --example-metrics "outputs/$run/metrics/example_metrics.csv" \
++      --output "outputs/selection/${run}_summary.json"
++  done
++}
++
++run_ambik_vectors() {
++  require_python
++  require_file data/raw/ambik/ambik_test_400.csv
++  say "Building benchmark-derived factorized concept corpus"
++  "$PY" -m clarifysae_llama.runners.build_ambik_concept_corpus \
++    --config configs/concept_vectors/build_ambik_concept_corpus.yaml
++  say "Extracting benchmark-derived vectors"
++  "$PY" -m clarifysae_llama.runners.extract_concept_vectors \
++    --config configs/concept_vectors/extract_ambik_vectors.yaml
++
++  run_dense_sweep_for_source \
++    ambik \
++    outputs/concept_vectors/llama32_1b_ambik_vectors.pt \
++    outputs/concept_vectors/llama32_1b_ambik_vectors.csv \
++    outputs/selection/ambik_layer_selection.json \
++    data/raw/ambik/ambik_test_400_internal_test_paired.csv
++
++  run_gate_sweep_for_source \
++    ambik \
++    outputs/concept_vectors/llama32_1b_ambik_vectors.pt \
++    outputs/selection/ambik_layer_selection.json \
++    data/raw/ambik/ambik_test_400_internal_test_paired.csv
++}
++
++run_ambik_final_test() {
++  require_python
++  require_file outputs/selection/ambik_gate_selection.json
++  "$PY" -m clarifysae_llama.runners.run_eval \
++    --config configs/local/baseline_llama32_1b_internal_test.yaml
++  "$PY" -m clarifysae_llama.runners.run_eval \
++    --config configs/local/ambik_dense_unconditional_test.yaml
++  "$PY" -m clarifysae_llama.runners.run_eval \
++    --config configs/local/ambik_dense_gated_test.yaml
++
++  for run in \
++    baseline_llama32_1b_internal_test \
++    ambik_dense_unconditional_test \
++    ambik_dense_gated_test; do
++    "$PY" scripts/summarize_selective_clarification.py run \
++      --example-metrics "outputs/$run/metrics/example_metrics.csv" \
++      --output "outputs/selection/${run}_summary.json"
++  done
++}
++
++run_project_sae() {
++  require_python
++  require_file outputs/selection/synthetic_layer_selection.json
++  say "Creating a projection config for the automatically selected layer"
++  "$PY" - <<'PY'
++import json
++from pathlib import Path
++import yaml
++
++selection = json.loads(Path("outputs/selection/synthetic_layer_selection.json").read_text())
++source = Path("configs/sae_projection/project_dense_vector_to_sae.yaml")
++config = yaml.safe_load(source.read_text())
++hookpoint = selection["hookpoint"]
++layer = int(selection["layer"])
++config["experiment_name"] = f"project_dense_clarification_vector_to_sae_layer{layer}"
++projection = config["sae_projection"]
++projection["vector_key"] = selection["ask_vector_key"]
++projection["hookpoint"] = hookpoint
++projection["module_path"] = hookpoint
++projection["output_dir"] = f"outputs/sae_projection/ask_trajectory_layer{layer}"
++output = Path("configs/local/project_synthetic_dense_vector_to_sae.yaml")
++output.parent.mkdir(parents=True, exist_ok=True)
++output.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
++print(f"Wrote {output}")
++PY
++  "$PY" -m clarifysae_llama.runners.project_concept_vector_to_sae \
++    --config configs/local/project_synthetic_dense_vector_to_sae.yaml
++}
++
++run_summarize() {
++  echo "Layer selections:"
++  find outputs/selection -maxdepth 1 -name '*layer_selection.json' -print 2>/dev/null | sort || true
++  echo "Strength selections:"
++  find outputs/selection -maxdepth 1 -name '*strength_selection.json' -print 2>/dev/null | sort || true
++  echo "Gate selections:"
++  find outputs/selection -maxdepth 1 -name '*gate_selection.json' -print 2>/dev/null | sort || true
++  echo "Final summaries:"
++  find outputs/selection -maxdepth 1 -name '*_summary.json' -print 2>/dev/null | sort || true
++  echo "Sweep rankings:"
++  find outputs/selection -maxdepth 1 -name '*_ranking.csv' -print 2>/dev/null | sort || true
++}
++
++run_status() {
++  local files=(
++    data/raw/ambik/ambik_calib_100.csv
++    data/raw/ambik/ambik_test_400.csv
++    data/raw/ambik/ambik_calib_100_paired.csv
++    data/raw/ambik/ambik_test_400_paired.csv
++    outputs/synthetic/clarification_counterfactuals_smoke.jsonl
++    outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.pt
++    outputs/synthetic/clarification_counterfactuals.jsonl
++    outputs/concept_vectors/llama32_1b_clarification_vectors.pt
++    outputs/selection/synthetic_layer_selection.json
++    outputs/selection/synthetic_strength_selection.json
++    outputs/selection/synthetic_gate_selection.json
++    outputs/concept_vectors/llama32_1b_ambik_vectors.pt
++    outputs/selection/ambik_gate_selection.json
++  )
++  for path in "${files[@]}"; do
++    if [[ -e "$path" ]]; then
++      printf 'OK      %s\n' "$path"
++    else
++      printf 'MISSING %s\n' "$path"
++    fi
++  done
++}
++
++run_phase1() {
++  run_setup
++  run_prepare
++  run_preflight
++  run_baseline_calib
++  run_smoke
++}
++
++run_phase2() {
++  run_full_vectors
++  run_dense_sweep
++  run_gate_sweep
++}
++
++command="${1:-help}"
++case "$command" in
++  setup) run_setup ;;
++  preflight) run_preflight ;;
++  prepare) run_prepare ;;
++  baseline-calib) run_baseline_calib ;;
++  smoke) run_smoke ;;
++  full-vectors) run_full_vectors ;;
++  dense-sweep) run_dense_sweep ;;
++  gate-sweep) run_gate_sweep ;;
++  final-test) run_final_test ;;
++  ambik-vectors) run_ambik_vectors ;;
++  ambik-final-test) run_ambik_final_test ;;
++  project-sae) run_project_sae ;;
++  summarize) run_summarize ;;
++  status) run_status ;;
++  phase1) run_phase1 ;;
++  phase2) run_phase2 ;;
++  all)
++    run_phase1
++    run_phase2
++    run_final_test
++    run_ambik_vectors
++    run_ambik_final_test
++    run_project_sae
++    ;;
++  help|-h|--help) usage ;;
++  *) usage; fail "Unknown command: $command" ;;
++esac
+diff --git a/scripts/select_dense_layer.py b/scripts/select_dense_layer.py
+new file mode 100644
+index 0000000..880c58f
+--- /dev/null
++++ b/scripts/select_dense_layer.py
+@@ -0,0 +1,111 @@
++from __future__ import annotations
++
++import argparse
++import json
++import re
++from pathlib import Path
++
++import pandas as pd
++
++
++def parse_layer(hookpoint: str) -> int:
++    match = re.search(r"layers\.(\d+)", hookpoint)
++    if not match:
++        raise ValueError(f"Cannot parse layer number from {hookpoint!r}")
++    return int(match.group(1))
++
++
++def parse_args() -> argparse.Namespace:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--diagnostics", required=True)
++    parser.add_argument("--output", required=True)
++    parser.add_argument(
++        "--ranking-output",
++        default=None,
++        help="Defaults to the output JSON path with .csv suffix.",
++    )
++    return parser.parse_args()
++
++
++def main() -> None:
++    args = parse_args()
++    diagnostics_path = Path(args.diagnostics)
++    df = pd.read_csv(diagnostics_path)
++    required = {"concept", "method", "hookpoint", "vector_key", "eval_auroc"}
++    missing = required - set(df.columns)
++    if missing:
++        raise ValueError(
++            f"{diagnostics_path} lacks required diagnostic columns: {sorted(missing)}"
++        )
++
++    ask = df[
++        (df["concept"] == "ask_trajectory")
++        & (df["method"] == "paired_difference")
++    ][["hookpoint", "vector_key", "eval_auroc", "eval_balanced_accuracy"]].rename(
++        columns={
++            "vector_key": "ask_vector_key",
++            "eval_auroc": "ask_eval_auroc",
++            "eval_balanced_accuracy": "ask_eval_balanced_accuracy",
++        }
++    )
++    gate = df[
++        (df["concept"] == "ambiguity_state")
++        & (df["method"] == "ridge_probe")
++    ][["hookpoint", "vector_key", "eval_auroc", "eval_balanced_accuracy"]].rename(
++        columns={
++            "vector_key": "gate_vector_key",
++            "eval_auroc": "gate_eval_auroc",
++            "eval_balanced_accuracy": "gate_eval_balanced_accuracy",
++        }
++    )
++
++    merged = ask.merge(gate, on="hookpoint", how="inner")
++    if merged.empty:
++        raise ValueError(
++            "No layer contains both ask_trajectory/paired_difference and "
++            "ambiguity_state/ridge_probe diagnostics."
++        )
++    merged = merged.dropna(subset=["ask_eval_auroc", "gate_eval_auroc"]).copy()
++    if merged.empty:
++        raise ValueError("All joint layer diagnostics have missing eval AUROC values.")
++
++    merged["joint_min_auroc"] = merged[
++        ["ask_eval_auroc", "gate_eval_auroc"]
++    ].min(axis=1)
++    merged["joint_mean_auroc"] = merged[
++        ["ask_eval_auroc", "gate_eval_auroc"]
++    ].mean(axis=1)
++    merged["layer"] = merged["hookpoint"].map(parse_layer)
++    merged = merged.sort_values(
++        ["joint_min_auroc", "joint_mean_auroc", "layer"],
++        ascending=[False, False, True],
++    ).reset_index(drop=True)
++
++    selected = merged.iloc[0].to_dict()
++    selected.update(
++        {
++            "selection_rule": (
++                "maximize the weaker held-out AUROC of the ambiguity probe and "
++                "ask trajectory; break ties by mean AUROC"
++            ),
++            "diagnostics_path": str(diagnostics_path),
++            "module_path": selected["hookpoint"],
++        }
++    )
++
++    output = Path(args.output)
++    output.parent.mkdir(parents=True, exist_ok=True)
++    output.write_text(json.dumps(selected, indent=2), encoding="utf-8")
++    ranking_output = (
++        Path(args.ranking_output)
++        if args.ranking_output
++        else output.with_suffix(".csv")
++    )
++    merged.to_csv(ranking_output, index=False)
++
++    print(json.dumps(selected, indent=2))
++    print(f"Layer ranking: {ranking_output}")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/summarize_selective_clarification.py b/scripts/summarize_selective_clarification.py
+new file mode 100644
+index 0000000..84b4559
+--- /dev/null
++++ b/scripts/summarize_selective_clarification.py
+@@ -0,0 +1,157 @@
++from __future__ import annotations
++
++import argparse
++import json
++from pathlib import Path
++from typing import Any
++
++import pandas as pd
++
++
++def _to_bool(series: pd.Series) -> pd.Series:
++    if series.dtype == bool:
++        return series
++    return series.astype(str).str.lower().eq("true")
++
++
++def summarize_metrics(path: Path) -> dict[str, Any]:
++    df = pd.read_csv(path)
++    required = {
++        "gold_ambiguous",
++        "asked_question",
++        "resolved_proxy_any",
++        "num_questions",
++    }
++    missing = required - set(df.columns)
++    if missing:
++        raise ValueError(f"{path} lacks columns: {sorted(missing)}")
++
++    gold_ambiguous = _to_bool(df["gold_ambiguous"])
++    asked = _to_bool(df["asked_question"])
++    resolved = _to_bool(df["resolved_proxy_any"])
++    ambiguous = df[gold_ambiguous].copy()
++    clear = df[~gold_ambiguous].copy()
++
++    result: dict[str, Any] = {
++        "example_metrics_path": str(path),
++        "n_total": int(len(df)),
++        "n_ambiguous": int(len(ambiguous)),
++        "n_clear": int(len(clear)),
++        "asking_rate_ambiguous": float(asked[gold_ambiguous].mean())
++        if len(ambiguous)
++        else None,
++        "overasking_rate_clear": float(asked[~gold_ambiguous].mean())
++        if len(clear)
++        else None,
++        "resolved_proxy_any_ambiguous": float(resolved[gold_ambiguous].mean())
++        if len(ambiguous)
++        else None,
++        "mean_questions_ambiguous": float(
++            pd.to_numeric(ambiguous["num_questions"], errors="coerce").mean()
++        )
++        if len(ambiguous)
++        else None,
++        "mean_questions_clear": float(
++            pd.to_numeric(clear["num_questions"], errors="coerce").mean()
++        )
++        if len(clear)
++        else None,
++    }
++    if "json_schema_valid" in df.columns:
++        result["json_schema_valid_rate"] = float(_to_bool(df["json_schema_valid"]).mean())
++    else:
++        result["json_schema_valid_rate"] = 1.0
++    return result
++
++
++def resolve_path(raw: Any, manifest_path: Path) -> Path:
++    path = Path(str(raw))
++    if path.is_absolute():
++        return path
++    candidates = [Path.cwd() / path, manifest_path.parent / path]
++    for candidate in candidates:
++        if candidate.exists():
++            return candidate
++    return candidates[0]
++
++
++def parse_args() -> argparse.Namespace:
++    parser = argparse.ArgumentParser()
++    subparsers = parser.add_subparsers(dest="command", required=True)
++
++    run = subparsers.add_parser("run")
++    run.add_argument("--example-metrics", required=True)
++    run.add_argument("--output", required=True)
++
++    sweep = subparsers.add_parser("sweep")
++    sweep.add_argument("--manifest", required=True)
++    sweep.add_argument("--output-csv", required=True)
++    sweep.add_argument("--selection-json", required=True)
++    sweep.add_argument("--overask-penalty", type=float, default=0.50)
++    sweep.add_argument("--invalid-json-penalty", type=float, default=0.25)
++    return parser.parse_args()
++
++
++def main() -> None:
++    args = parse_args()
++    if args.command == "run":
++        summary = summarize_metrics(Path(args.example_metrics))
++        output = Path(args.output)
++        output.parent.mkdir(parents=True, exist_ok=True)
++        output.write_text(json.dumps(summary, indent=2), encoding="utf-8")
++        print(json.dumps(summary, indent=2))
++        return
++
++    manifest_path = Path(args.manifest)
++    manifest = pd.read_csv(manifest_path)
++    if "example_metrics_path" not in manifest.columns:
++        raise ValueError(f"{manifest_path} has no example_metrics_path column")
++
++    rows: list[dict[str, Any]] = []
++    for _, manifest_row in manifest.iterrows():
++        metrics_path = resolve_path(manifest_row["example_metrics_path"], manifest_path)
++        summary = summarize_metrics(metrics_path)
++        row = manifest_row.to_dict()
++        row.update(summary)
++        resolved = float(summary.get("resolved_proxy_any_ambiguous") or 0.0)
++        overask = float(summary.get("overasking_rate_clear") or 0.0)
++        valid = float(summary.get("json_schema_valid_rate") or 0.0)
++        row["selection_utility"] = (
++            resolved
++            - float(args.overask_penalty) * overask
++            - float(args.invalid_json_penalty) * (1.0 - valid)
++        )
++        rows.append(row)
++
++    table = pd.DataFrame(rows).sort_values(
++        ["selection_utility", "resolved_proxy_any_ambiguous", "overasking_rate_clear"],
++        ascending=[False, False, True],
++    )
++    output_csv = Path(args.output_csv)
++    output_csv.parent.mkdir(parents=True, exist_ok=True)
++    table.to_csv(output_csv, index=False)
++
++    selected = table.iloc[0].to_dict()
++    selected.update(
++        {
++            "selection_rule": (
++                "resolved_proxy_any_ambiguous - overask_penalty * "
++                "overasking_rate_clear - invalid_json_penalty * "
++                "(1 - json_schema_valid_rate)"
++            ),
++            "overask_penalty": float(args.overask_penalty),
++            "invalid_json_penalty": float(args.invalid_json_penalty),
++            "manifest": str(manifest_path),
++        }
++    )
++    selection_json = Path(args.selection_json)
++    selection_json.parent.mkdir(parents=True, exist_ok=True)
++    selection_json.write_text(json.dumps(selected, indent=2), encoding="utf-8")
++
++    print(table.head(10).to_string(index=False))
++    print("\nSelected configuration:")
++    print(json.dumps(selected, indent=2))
++
++
++if __name__ == "__main__":
++    main()
