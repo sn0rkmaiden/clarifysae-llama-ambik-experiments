@@ -71,8 +71,10 @@ def test_corrective_pilot_assessment_go() -> None:
     ]
     result = assess(
         corpus_metadata={
-            "acceptance_rate": 0.90,
-            "accepted_by_topic": {"one": 2, "two": 1},
+            "corpus_type": "ambik_annotated_actor",
+            "source_examples": 80,
+            "failure_count": 0,
+            "split_source_counts": {"train": 60, "dev": 20},
         },
         layer_selection={
             "actor_ask_vs_guess_eval_auroc": 0.80,
@@ -107,8 +109,10 @@ def test_corrective_pilot_assessment_blocks_weak_gate() -> None:
         )
     result = assess(
         corpus_metadata={
-            "acceptance_rate": 0.90,
-            "accepted_by_topic": {"one": 1},
+            "corpus_type": "ambik_annotated_actor",
+            "source_examples": 80,
+            "failure_count": 0,
+            "split_source_counts": {"train": 60, "dev": 20},
         },
         layer_selection={
             "actor_ask_vs_guess_eval_auroc": 0.80,

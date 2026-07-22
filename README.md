@@ -208,8 +208,8 @@ The current staged comparison first runs a **corrective pilot**, not the final
 100-pair test. It separates the two functions needed for selective
 clarification:
 
-- a synthetic **targeted-clarification actor direction**, combining
-  targeted-question versus silent-guess and targeted-question versus generic-
+- an in-domain AmbiK **targeted-clarification actor direction**, combining
+  gold-question versus gold-resolved-plan and gold-question versus generic-
   question contrasts;
 - a real-AmbiK **ambiguity probe**, trained on 60 matched ambiguous/clear pairs
   and validated on 20 disjoint calibration pairs.
@@ -225,10 +225,11 @@ validity.
 bash scripts/run_selective_comparison.sh pilot
 ```
 
-The runner generates 60 synthetic scenario slots, requires at least 80%
-acceptance and coverage of all 20 topics, selects a layer using held-out actor
-and gate AUROCs, sweeps a small diagnostic strength/gate grid, and writes an
-automatic go/no-go report to:
+The runner builds the actor corpus from 60 AmbiK training examples and 20
+separate AmbiK development examples, checks that every source row expands into
+the complete factorized corpus, selects a layer using held-out actor and gate
+AUROCs, sweeps a small diagnostic strength/gate grid, and writes an automatic
+go/no-go report to:
 
 ```text
 outputs/selective_corrective_pilot/comparison/pilot_assessment.json

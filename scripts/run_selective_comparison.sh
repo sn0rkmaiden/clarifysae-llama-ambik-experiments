@@ -40,8 +40,8 @@ package_results() {
   local extra=(
     outputs/probe_corpus/ambik_probe_train60_dev20.jsonl
     outputs/probe_corpus/ambik_probe_train60_dev20.metadata.json
-    outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.csv
-    outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.config.json
+    outputs/concept_vectors/llama32_1b_ambik_clarification_actor_vectors_pilot.csv
+    outputs/concept_vectors/llama32_1b_ambik_clarification_actor_vectors_pilot.config.json
     outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.csv
     outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.config.json
     outputs/selection/corrective_pilot_layer_selection.json
@@ -53,10 +53,9 @@ package_results() {
   )
   if [[ "$mode" == "pilot" || "$mode" == "smoke" ]]; then
     extra+=(
-      outputs/synthetic/clarification_counterfactuals_pilot.jsonl
-      outputs/synthetic/clarification_counterfactuals_pilot.metadata.json
-      outputs/synthetic/clarification_counterfactuals_pilot.failures.json
-      outputs/synthetic/clarification_counterfactuals_pilot.complete
+      outputs/actor_corpus/ambik_actor_train60_dev20.jsonl
+      outputs/actor_corpus/ambik_actor_train60_dev20.metadata.json
+      outputs/actor_corpus/ambik_actor_train60_dev20.complete
     )
   fi
   for path in "${extra[@]}"; do
@@ -82,22 +81,27 @@ prepare_common() {
 }
 
 prepare_corrective_representations() {
-  local synthetic=outputs/synthetic/clarification_counterfactuals_pilot.jsonl
-  local actor=outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt
+  local actor_corpus=outputs/actor_corpus/ambik_actor_train60_dev20.jsonl
+  local actor_complete=outputs/actor_corpus/ambik_actor_train60_dev20.complete
+  local actor=outputs/concept_vectors/llama32_1b_ambik_clarification_actor_vectors_pilot.pt
   local probe_corpus=outputs/probe_corpus/ambik_probe_train60_dev20.jsonl
   local gate=outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt
   local selection=outputs/selection/corrective_pilot_layer_selection.json
 
-  if [[ ! -f outputs/synthetic/clarification_counterfactuals_pilot.complete ]]; then
+  if [[ ! -f "$actor_complete" ]]; then
     rm -f \
-      "$synthetic" \
-      outputs/synthetic/clarification_counterfactuals_pilot.metadata.json \
-      outputs/synthetic/clarification_counterfactuals_pilot.failures.json
-    "$PYTHON" -m clarifysae_llama.runners.generate_synthetic_corpus \
-      --config configs/local/generate_clarification_counterfactuals_pilot.yaml
+      "$actor_corpus" \
+      outputs/actor_corpus/ambik_actor_train60_dev20.metadata.json \
+      "$actor_complete"
+    "$PYTHON" scripts/build_ambik_actor_corpus.py \
+      --train data/raw/ambik/ambik_calib_probe_train60.csv \
+      --dev data/raw/ambik/ambik_calib_pilot_select20.csv \
+      --output "$actor_corpus" \
+      --expected-train 60 \
+      --expected-dev 20
   fi
-  require_file "$synthetic"
-  require_file outputs/synthetic/clarification_counterfactuals_pilot.complete
+  require_file "$actor_corpus"
+  require_file "$actor_complete"
 
   if [[ ! -f "$probe_corpus" ]]; then
     "$PYTHON" scripts/build_ambik_probe_corpus.py \
@@ -116,13 +120,13 @@ prepare_corrective_representations() {
   fi
 
   "$PYTHON" scripts/select_dense_layer.py \
-    --actor-diagnostics outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.csv \
+    --actor-diagnostics outputs/concept_vectors/llama32_1b_ambik_clarification_actor_vectors_pilot.csv \
     --gate-diagnostics outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.csv \
     --output "$selection"
 }
 
 prepare_pilot_selections() {
-  local actor=outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt
+  local actor=outputs/concept_vectors/llama32_1b_ambik_clarification_actor_vectors_pilot.pt
   local gate=outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt
   local selection=outputs/selection/corrective_pilot_layer_selection.json
 
@@ -182,7 +186,7 @@ run_pilot() {
   "$PYTHON" scripts/build_selective_controls.py \
     --prefix pilot \
     --dataset data/raw/ambik/ambik_calib_pilot_eval20_paired.csv \
-    --vector-path outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt \
+    --vector-path outputs/concept_vectors/llama32_1b_ambik_clarification_actor_vectors_pilot.pt \
     --gate-vector-path outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt \
     --selection outputs/selection/corrective_pilot_layer_selection.json \
     --strength-selection outputs/selection/corrective_pilot_strength_selection.json \
@@ -205,7 +209,7 @@ run_smoke() {
   "$PYTHON" scripts/build_selective_controls.py \
     --prefix smoke_v2 \
     --dataset data/raw/ambik/ambik_calib_smoke_paired.csv \
-    --vector-path outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt \
+    --vector-path outputs/concept_vectors/llama32_1b_ambik_clarification_actor_vectors_pilot.pt \
     --gate-vector-path outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt \
     --selection outputs/selection/corrective_pilot_layer_selection.json \
     --strength 0.10 \
@@ -222,7 +226,7 @@ run_smoke() {
 
 run_main() {
   prepare_common
-  require_file outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt
+  require_file outputs/concept_vectors/llama32_1b_ambik_clarification_actor_vectors_pilot.pt
   require_file outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt
   require_file outputs/selection/corrective_pilot_layer_selection.json
   require_file outputs/selection/corrective_pilot_strength_selection.json
@@ -238,7 +242,7 @@ run_main() {
   "$PYTHON" scripts/build_selective_controls.py \
     --prefix main \
     --dataset data/raw/ambik/ambik_test_eval100_paired.csv \
-    --vector-path outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt \
+    --vector-path outputs/concept_vectors/llama32_1b_ambik_clarification_actor_vectors_pilot.pt \
     --gate-vector-path outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt \
     --selection outputs/selection/corrective_pilot_layer_selection.json \
     --strength-selection outputs/selection/corrective_pilot_strength_selection.json \

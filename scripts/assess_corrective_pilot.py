@@ -57,11 +57,11 @@ def assess(
     sign_flip = _arm(summary, "dense_sign_flip")
     random_control = _arm(summary, "random_direction")
 
-    acceptance_rate = _finite(corpus_metadata.get("acceptance_rate"))
-    accepted_by_topic = dict(corpus_metadata.get("accepted_by_topic", {}))
-    missing_topics = sorted(
-        str(topic) for topic, count in accepted_by_topic.items() if int(count) <= 0
-    )
+    source_examples = int(corpus_metadata.get("source_examples", 0) or 0)
+    failure_count = int(corpus_metadata.get("failure_count", 0) or 0)
+    split_source_counts = dict(corpus_metadata.get("split_source_counts", {}))
+    actor_train_examples = int(split_source_counts.get("train", 0) or 0)
+    actor_dev_examples = int(split_source_counts.get("dev", 0) or 0)
     actor_guess = _finite(layer_selection.get("actor_ask_vs_guess_eval_auroc"))
     actor_generic = _finite(
         layer_selection.get("actor_targeted_vs_generic_eval_auroc")
@@ -100,8 +100,10 @@ def assess(
     )
 
     checks = {
-        "synthetic_acceptance_at_least_0_80": _ge(acceptance_rate, 0.80),
-        "all_topics_covered": not missing_topics,
+        "actor_corpus_has_80_examples": source_examples == 80,
+        "actor_corpus_has_no_failed_rows": failure_count == 0,
+        "actor_corpus_has_60_train_examples": actor_train_examples == 60,
+        "actor_corpus_has_20_dev_examples": actor_dev_examples == 20,
         "actor_ask_vs_guess_auroc_at_least_0_75": _ge(actor_guess, 0.75),
         "actor_targeted_vs_generic_auroc_at_least_0_65": _ge(
             actor_generic, 0.65
@@ -155,8 +157,11 @@ def assess(
         "checks": checks,
         "failed_checks": failed,
         "representation_diagnostics": {
-            "synthetic_acceptance_rate": acceptance_rate,
-            "missing_topics": missing_topics,
+            "actor_corpus_type": corpus_metadata.get("corpus_type"),
+            "actor_corpus_source_examples": source_examples,
+            "actor_corpus_failure_count": failure_count,
+            "actor_corpus_train_examples": actor_train_examples,
+            "actor_corpus_dev_examples": actor_dev_examples,
             "actor_ask_vs_guess_eval_auroc": actor_guess,
             "actor_targeted_vs_generic_eval_auroc": actor_generic,
             "gate_eval_auroc": gate_auroc,
@@ -184,7 +189,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--corpus-metadata",
-        default="outputs/synthetic/clarification_counterfactuals_pilot.metadata.json",
+        default="outputs/actor_corpus/ambik_actor_train60_dev20.metadata.json",
     )
     parser.add_argument(
         "--layer-selection",

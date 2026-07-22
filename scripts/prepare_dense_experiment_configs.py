@@ -52,46 +52,16 @@ def write_static(root: Path) -> None:
     )
     save_yaml(local / "baseline_llama32_1b_internal_test.yaml", baseline_internal)
 
-    synthetic = load_yaml(
-        root / "configs/synthetic/generate_clarification_counterfactuals.yaml"
-    )
-    synthetic["experiment_name"] = "synthetic_clarification_counterfactuals_smoke"
-    synthetic["generation"]["max_new_tokens"] = 384
-    synthetic["synthetic_corpus"]["output_path"] = (
-        "outputs/synthetic/clarification_counterfactuals_smoke_v2.jsonl"
-    )
-    synthetic["synthetic_corpus"]["scenarios_per_topic"] = 1
-    save_yaml(local / "generate_clarification_counterfactuals_smoke_v2.yaml", synthetic)
-
-    pilot_synthetic = json.loads(json.dumps(synthetic))
-    pilot_synthetic["experiment_name"] = "synthetic_clarification_counterfactuals_pilot"
-    pilot_synthetic["generation"]["max_new_tokens"] = 512
-    pilot_synthetic["synthetic_corpus"]["output_path"] = (
-        "outputs/synthetic/clarification_counterfactuals_pilot.jsonl"
-    )
-    pilot_synthetic["synthetic_corpus"]["scenarios_per_topic"] = 3
-    save_yaml(local / "generate_clarification_counterfactuals_pilot.yaml", pilot_synthetic)
-
     extraction = load_yaml(
         root / "configs/concept_vectors/extract_clarification_vectors.yaml"
     )
-    extraction["experiment_name"] = "extract_clarification_actor_vectors_smoke_v2"
-    extraction["concept_discovery"]["dataset_path"] = (
-        "outputs/synthetic/clarification_counterfactuals_smoke_v2.jsonl"
-    )
-    extraction["concept_discovery"]["output_path"] = (
-        "outputs/concept_vectors/llama32_1b_clarification_actor_vectors_smoke_v2.pt"
-    )
-    extraction["concept_discovery"]["batch_size"] = 2
-    save_yaml(local / "extract_clarification_actor_vectors_smoke_v2.yaml", extraction)
-
     pilot_actor = json.loads(json.dumps(extraction))
     pilot_actor["experiment_name"] = "extract_clarification_actor_vectors_pilot"
     pilot_actor["concept_discovery"]["dataset_path"] = (
-        "outputs/synthetic/clarification_counterfactuals_pilot.jsonl"
+        "outputs/actor_corpus/ambik_actor_train60_dev20.jsonl"
     )
     pilot_actor["concept_discovery"]["output_path"] = (
-        "outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt"
+        "outputs/concept_vectors/llama32_1b_ambik_clarification_actor_vectors_pilot.pt"
     )
     pilot_actor["concept_discovery"]["batch_size"] = 8
     save_yaml(local / "extract_clarification_actor_vectors_pilot.yaml", pilot_actor)
