@@ -89,6 +89,11 @@ def parse_args() -> argparse.Namespace:
     sweep.add_argument("--selection-json", required=True)
     sweep.add_argument("--overask-penalty", type=float, default=0.50)
     sweep.add_argument("--invalid-json-penalty", type=float, default=0.25)
+    sweep.add_argument(
+        "--exclude-zero-parameter",
+        action="store_true",
+        help="Do not select the zero-valued sweep point as the causal intervention.",
+    )
     return parser.parse_args()
 
 
@@ -131,7 +136,16 @@ def main() -> None:
     output_csv.parent.mkdir(parents=True, exist_ok=True)
     table.to_csv(output_csv, index=False)
 
-    selected = table.iloc[0].to_dict()
+    selection_table = table
+    if args.exclude_zero_parameter:
+        if "value" not in table.columns:
+            raise ValueError(
+                "--exclude-zero-parameter requires a sweep manifest with a value column"
+            )
+        selection_table = table[pd.to_numeric(table["value"], errors="coerce").abs() > 1e-12]
+        if selection_table.empty:
+            raise ValueError("No non-zero sweep points are available for selection")
+    selected = selection_table.iloc[0].to_dict()
     selected.update(
         {
             "selection_rule": (

@@ -20,6 +20,12 @@ OPTIONAL_COLUMNS = {
     'plan_for_clear_task',
 }
 
+PASSTHROUGH_COLUMNS = [
+    'source_id',
+    'source_split',
+    'pair_variant',
+]
+
 
 def _ensure_id_column(df: pd.DataFrame) -> pd.DataFrame:
     if 'id' in df.columns:
@@ -62,6 +68,7 @@ def load_ambik_clarification_dataset(path: str | Path, limit: int | None = None)
         'answer',
         'plan_for_clear_task',
     ]
+    keep_cols.extend(column for column in PASSTHROUGH_COLUMNS if column in df.columns)
     result = df[keep_cols].copy().reset_index(drop=True)
 
     if limit is not None:

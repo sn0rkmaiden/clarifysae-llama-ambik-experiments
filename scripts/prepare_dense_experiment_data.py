@@ -28,6 +28,20 @@ def split_for_id(value: str, *, train: float, dev: float, seed: int) -> str:
     return "test"
 
 
+def deterministic_subset(df: pd.DataFrame, *, n: int, seed: int, label: str) -> pd.DataFrame:
+    if n <= 0:
+        raise ValueError("subset size must be positive")
+    if n >= len(df):
+        return df.copy()
+    ranked: list[tuple[str, int]] = []
+    for position, (_, row) in enumerate(df.iterrows()):
+        source_id = str(row.get("id", position))
+        digest = hashlib.sha256(f"{seed}:{label}:{source_id}".encode("utf-8")).hexdigest()
+        ranked.append((digest, position))
+    chosen = sorted(position for _digest, position in sorted(ranked)[:n])
+    return df.iloc[chosen].copy().reset_index(drop=True)
+
+
 def validate(df: pd.DataFrame, path: Path) -> pd.DataFrame:
     missing = REQUIRED_COLUMNS - set(df.columns)
     if missing:
@@ -131,6 +145,9 @@ def parse_args() -> argparse.Namespace:
         default="data/raw/ambik/ambik_test_400.csv",
     )
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--smoke-pairs", type=int, default=4)
+    parser.add_argument("--selection-pairs", type=int, default=50)
+    parser.add_argument("--heldout-pairs", type=int, default=100)
     return parser.parse_args()
 
 
@@ -147,6 +164,9 @@ def main() -> None:
             f"Missing {test}. Copy the AmbiK test CSV to this location."
         )
 
+    calib_df = validate(pd.read_csv(calib), calib)
+    test_df = validate(pd.read_csv(test), test)
+
     reports = [
         write_pair_files(
             calib,
@@ -161,6 +181,40 @@ def main() -> None:
             add_internal_split=True,
         ),
     ]
+
+    derived_sets = [
+        (
+            deterministic_subset(
+                calib_df, n=args.smoke_pairs, seed=args.seed, label="smoke"
+            ),
+            calib.with_name("ambik_calib_smoke.csv"),
+            calib.with_name("ambik_calib_smoke_paired.csv"),
+        ),
+        (
+            deterministic_subset(
+                calib_df, n=args.selection_pairs, seed=args.seed, label="selection"
+            ),
+            calib.with_name("ambik_calib_select50.csv"),
+            calib.with_name("ambik_calib_select50_paired.csv"),
+        ),
+        (
+            deterministic_subset(
+                test_df, n=args.heldout_pairs, seed=args.seed, label="heldout"
+            ),
+            test.with_name("ambik_test_eval100.csv"),
+            test.with_name("ambik_test_eval100_paired.csv"),
+        ),
+    ]
+    for subset, source_subset_path, paired_subset_path in derived_sets:
+        subset.to_csv(source_subset_path, index=False)
+        reports.append(
+            write_pair_files(
+                source_subset_path,
+                paired_subset_path,
+                seed=args.seed,
+                add_internal_split=False,
+            )
+        )
     print(json.dumps(reports, indent=2))
 
 

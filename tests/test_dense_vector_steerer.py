@@ -128,3 +128,27 @@ def test_stored_gate_temperature_and_recorded_norm_scaling(tmp_path):
         steerer.detach()
     # sigmoid(0)=0.5; strength * recorded norm = 0.2 * 10 = 2.
     assert torch.allclose(y[0, -1], torch.tensor([1.0, 0.0]))
+
+
+def test_gate_threshold_uses_standardized_score_units(tmp_path):
+    model = DummyModel()
+    path = _bundle(tmp_path)
+    steerer = DenseVectorSteerer(
+        model, torch.device("cpu"), torch.float32,
+        DenseVectorConfig(
+            vector_path=path, vector_key="steer", hookpoint="model.layers.0",
+            strength=0.2, scale_mode="recorded_residual_norm_fraction",
+            apply_to="last_position", steer_generated_tokens_only=False,
+            gate_enabled=True, gate_vector_key="gate", gate_mode="sigmoid",
+            gate_threshold=1.0, gate_temperature=None,
+        ),
+    )
+    # Gate score is 2.5 and stored temperature is 2.5, hence standardized
+    # score=1.0. Threshold=1.0 must yield sigmoid(0)=0.5.
+    x = torch.tensor([[[0.0, 0.0], [0.0, 2.5]]])
+    steerer.attach()
+    try:
+        y = model(x)
+    finally:
+        steerer.detach()
+    assert torch.allclose(y[0, -1], torch.tensor([1.0, 2.5]), atol=1e-6)

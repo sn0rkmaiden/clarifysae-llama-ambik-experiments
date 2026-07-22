@@ -92,6 +92,9 @@ def build_prompts(dataset: pd.DataFrame, eval_settings: dict[str, Any]) -> list[
                 max_questions=max_questions,
             ),
         }
+        for column in ('source_id', 'source_split', 'pair_variant'):
+            if column in row.index:
+                prompt_row[column] = row[column]
         rows.append(prompt_row)
     return rows
 
@@ -166,6 +169,9 @@ def _coerce_predicted_ambiguous(value: Any) -> bool | None:
 def _compact_prediction_row(row: dict[str, Any], *, enable_nli: bool) -> dict[str, Any]:
     keep = [
         'id',
+        'source_id',
+        'source_split',
+        'pair_variant',
         'ambiguity_type',
         'ambiguous_instruction',
         'gold_question',
@@ -210,6 +216,9 @@ def _compact_prediction_rows(rows: list[dict[str, Any]], *, enable_nli: bool) ->
 def _select_example_metric_columns(raw_df: pd.DataFrame, *, enable_nli: bool) -> list[str]:
     columns = [
         'id',
+        'source_id',
+        'source_split',
+        'pair_variant',
         'ambiguity_type',
         'gold_ambiguous',
         'predicted_ambiguous',
@@ -248,6 +257,9 @@ def _finalize_prediction_rows(prompt_rows: list[dict[str, Any]], eval_settings: 
             'gold_answer': row['gold_answer'],
             'gold_plan_for_clear': row['gold_plan_for_clear'],
         }
+        for column in ('source_id', 'source_split', 'pair_variant'):
+            if column in row:
+                prediction_row[column] = row[column]
 
         raw_output = row.get('raw_model_output', '')
         parsed = parse_model_json(raw_output)

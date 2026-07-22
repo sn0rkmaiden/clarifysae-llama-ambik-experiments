@@ -87,6 +87,8 @@ def write_dense(
     gate_selection_path: str | None,
     calib_dataset: str,
     test_dataset: str,
+    strength_values: list[float] | None = None,
+    gate_values: list[float] | None = None,
 ) -> None:
     selection = load_json(str(selection_path))
     strength_selection = load_json(strength_selection_path)
@@ -123,6 +125,8 @@ def write_dense(
     strength_sweep["base_config"] = (
         f"configs/local/{source}_dense_unconditional.yaml"
     )
+    if strength_values:
+        strength_sweep["sweep"]["values"] = [float(value) for value in strength_values]
     save_yaml(local / f"{source}_sweep_dense_strengths.yaml", strength_sweep)
 
     gated = json.loads(json.dumps(base))
@@ -135,6 +139,8 @@ def write_dense(
     )
     gate_sweep["experiment_name"] = f"{source}_dense_gate_threshold_sweep"
     gate_sweep["base_config"] = f"configs/local/{source}_dense_gated.yaml"
+    if gate_values:
+        gate_sweep["sweep"]["values"] = [float(value) for value in gate_values]
     save_yaml(local / f"{source}_sweep_gate_thresholds.yaml", gate_sweep)
 
     final_unconditional = json.loads(json.dumps(unconditional))
@@ -172,6 +178,8 @@ def parse_args() -> argparse.Namespace:
         "--test-dataset",
         default="data/raw/ambik/ambik_test_400_paired.csv",
     )
+    dense.add_argument("--strength-values", nargs="*", type=float, default=None)
+    dense.add_argument("--gate-values", nargs="*", type=float, default=None)
     return parser.parse_args()
 
 
@@ -190,6 +198,8 @@ def main() -> None:
         gate_selection_path=args.gate_selection,
         calib_dataset=args.calib_dataset,
         test_dataset=args.test_dataset,
+        strength_values=args.strength_values,
+        gate_values=args.gate_values,
     )
 
 

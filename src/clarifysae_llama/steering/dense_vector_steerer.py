@@ -149,12 +149,16 @@ class DenseVectorSteerer:
             gate_vector = self.gate_vector.to(device=hidden.device, dtype=hidden.dtype)
             scores = hidden[:, -1, :] @ gate_vector + float(self.gate_bias)
             self.last_gate_scores = scores.detach().float().cpu()
-            centered = scores - float(self.config.gate_threshold)
+            # Thresholds are expressed in calibrated score-standard-deviation
+            # units. This matches the sweep configuration and makes thresholds
+            # comparable across layers instead of treating +/-1 as raw logits.
+            normalized_scores = scores / max(float(self.gate_temperature), 1e-6)
+            centered = normalized_scores - float(self.config.gate_threshold)
             mode = self.config.gate_mode.strip().lower().replace("-", "_")
             if mode == "hard":
                 weights = (centered > 0).to(hidden.dtype)
             elif mode == "sigmoid":
-                weights = torch.sigmoid(centered / max(float(self.gate_temperature), 1e-6))
+                weights = torch.sigmoid(centered)
             elif mode == "positive_score":
                 weights = centered.clamp_min(0)
             else:

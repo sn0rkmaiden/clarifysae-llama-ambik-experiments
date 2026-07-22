@@ -201,3 +201,22 @@ To run the dense clarification study without manually editing YAML files, follow
 ```bash
 bash scripts/run_dense_clarification_pipeline.sh help
 ```
+
+## Recommended selective dense-versus-SAE comparison
+
+The repository-compatible comparison added for the clarification study runs the
+same held-out matched prompts under five arms: unsteered baseline, selected
+probe-gated dense direction, sign-flipped dense direction, orthogonal random
+direction with the same gate, and the frozen Llama-1B SAE baseline
+(layer 12, feature 6230, strength -5).
+
+```bash
+bash scripts/run_selective_comparison.sh smoke
+bash scripts/run_selective_comparison.sh main
+```
+
+The smoke command verifies the complete generation, activation extraction,
+layer selection, dense steering, random control, SAE steering, evaluation, and
+summary path on four pairs. The main command uses 50 calibration pairs for the
+small strength/gate selection and 100 disjoint AmbiK test pairs for the final
+comparison with paired bootstrap confidence intervals.
