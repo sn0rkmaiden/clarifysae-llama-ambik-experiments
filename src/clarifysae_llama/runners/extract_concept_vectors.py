@@ -281,13 +281,21 @@ def run(config: dict[str, Any]) -> None:
     max_length = int(cfg.get("max_length", 512))
     default_pooling = str(cfg.get("pooling", "recommended"))
     mean_after_token = int(cfg.get("mean_after_token", 50))
+    format_as_generation_prompts = bool(
+        cfg.get("format_as_generation_prompts", False)
+    )
 
     activation_rows: dict[str, list[torch.Tensor]] = {hp: [] for hp in hookpoints}
     model_device = backend._model_input_device()
     with MultiHookCapture(model, hookpoints, module_paths) as capture:
         for start in tqdm(range(0, len(rows), batch_size), desc="Extracting residual activations"):
             batch_rows = rows[start:start + batch_size]
-            texts = [str(row["text"]) for row in batch_rows]
+            raw_texts = [str(row["text"]) for row in batch_rows]
+            texts = (
+                backend._format_prompts(raw_texts)
+                if format_as_generation_prompts
+                else raw_texts
+            )
             tokenized = tokenizer(
                 texts,
                 return_tensors="pt",
@@ -338,6 +346,7 @@ def run(config: dict[str, Any]) -> None:
     max_pcs = pca_cfg.get("max_components")
     require_neutral = bool(pca_cfg.get("required", False))
     methods = list(cfg.get("methods", ["paired_difference", "difference_in_means", "ridge_probe"]))
+    composite_specs = list(cfg.get("composite_vectors", []))
     fit_splits = _normalise_string_set(cfg.get("fit_splits")) or None
     eval_splits = _normalise_string_set(cfg.get("eval_splits")) or None
     pair_field = str(cfg.get("pair_id_field", "pair_id"))
@@ -478,6 +487,142 @@ def run(config: dict[str, Any]) -> None:
                 row_diag.update({f"eval_{k}": v for k, v in eval_diag.items()})
                 diagnostics.append(row_diag)
 
+        for spec in composite_specs:
+            if not isinstance(spec, dict):
+                raise TypeError("Each composite_vectors entry must be a mapping")
+            name = str(spec.get("name", "")).strip()
+            method_name = str(
+                spec.get("method", "composite_paired_difference")
+            ).strip().lower().replace("-", "_")
+            components = list(spec.get("components", []))
+            if not name or not components:
+                raise ValueError(
+                    "Composite vectors require a non-empty name and components"
+                )
+
+            composite = torch.zeros_like(all_acts[0], dtype=torch.float32)
+            component_records: list[dict[str, Any]] = []
+            for component in components:
+                concept_name = str(component["concept"])
+                component_method = str(
+                    component.get("method", "paired_difference")
+                ).strip().lower().replace("-", "_")
+                weight = float(component.get("weight", 1.0))
+                component_key = (
+                    f"{_safe_key(concept_name)}__{component_method}__"
+                    f"{_safe_key(hp)}"
+                )
+                if component_key not in vectors:
+                    raise KeyError(
+                        f"Composite {name!r} requires missing vector "
+                        f"{component_key!r}"
+                    )
+                component_vector = vectors[component_key]["vector"].float()
+                composite = composite + weight * component_vector
+                component_records.append({
+                    "vector_key": component_key,
+                    "weight": weight,
+                })
+
+            raw_composite = composite.clone()
+            composite = composite / composite.norm().clamp_min(1e-8)
+            key = f"{_safe_key(name)}__{method_name}__{_safe_key(hp)}"
+
+            fit_contrast_diags: dict[str, dict[str, float]] = {}
+            eval_contrast_diags: dict[str, dict[str, float]] = {}
+            diagnostic_concepts = dict(spec.get("diagnostic_concepts", {}))
+            for contrast_name, contrast_concept in diagnostic_concepts.items():
+                concept_idx = [
+                    i for i, row in enumerate(rows)
+                    if str(row["concept"]) == str(contrast_concept)
+                ]
+                concept_rows_all = [rows[i] for i in concept_idx]
+                concept_acts_all = all_acts[concept_idx]
+                fit_local_idx = [
+                    i for i, row in enumerate(concept_rows_all)
+                    if not fit_splits or _row_split(row) in fit_splits
+                ]
+                _fit_rows, fit_pos, fit_neg = _class_matrices(
+                    concept_rows_all,
+                    concept_acts_all,
+                    allowed_indices=fit_local_idx,
+                )
+                fit_contrast_diags[str(contrast_name)] = (
+                    binary_score_diagnostics(composite, 0.0, fit_pos, fit_neg)
+                )
+
+                eval_local_idx = [
+                    i for i, row in enumerate(concept_rows_all)
+                    if eval_splits and _row_split(row) in eval_splits
+                ]
+                if eval_local_idx:
+                    _eval_rows, eval_pos, eval_neg = _class_matrices(
+                        concept_rows_all,
+                        concept_acts_all,
+                        allowed_indices=eval_local_idx,
+                    )
+                    if eval_pos.shape[0] and eval_neg.shape[0]:
+                        eval_contrast_diags[str(contrast_name)] = (
+                            binary_score_diagnostics(
+                                composite, 0.0, eval_pos, eval_neg
+                            )
+                        )
+
+            fit_aurocs = [
+                float(diag["auroc"]) for diag in fit_contrast_diags.values()
+                if "auroc" in diag
+            ]
+            eval_aurocs = [
+                float(diag["auroc"]) for diag in eval_contrast_diags.values()
+                if "auroc" in diag
+            ]
+            fit_diag = {"auroc": min(fit_aurocs)} if fit_aurocs else {}
+            eval_diag = {"auroc": min(eval_aurocs)} if eval_aurocs else {}
+
+            vectors[key] = {
+                "vector": composite.cpu(),
+                "raw_vector": raw_composite.cpu(),
+                "concept": name,
+                "method": method_name,
+                "hookpoint": hp,
+                "pooling": "assistant_mean",
+                "components": component_records,
+                "diagnostic_concepts": diagnostic_concepts,
+                "average_residual_norm": average_residual_norm,
+                "fit_diagnostics": fit_diag,
+                "eval_diagnostics": eval_diag,
+                "fit_contrast_diagnostics": fit_contrast_diags,
+                "eval_contrast_diagnostics": eval_contrast_diags,
+            }
+            row_diag = {
+                "vector_key": key,
+                "concept": name,
+                "method": method_name,
+                "hookpoint": hp,
+                "pooling": "assistant_mean",
+                "n_positive": None,
+                "n_negative": None,
+                "vector_norm": float(composite.norm()),
+                "raw_clean_cosine": cosine_similarity(
+                    raw_composite, composite
+                ),
+                "neutral_pcs_removed": None,
+                "average_residual_norm": average_residual_norm,
+                "fit_auroc": fit_diag.get("auroc"),
+                "eval_auroc": eval_diag.get("auroc"),
+            }
+            for contrast_name, diag in fit_contrast_diags.items():
+                for metric_name, value in diag.items():
+                    row_diag[
+                        f"fit_{metric_name}_{_safe_key(contrast_name)}"
+                    ] = value
+            for contrast_name, diag in eval_contrast_diags.items():
+                for metric_name, value in diag.items():
+                    row_diag[
+                        f"eval_{metric_name}_{_safe_key(contrast_name)}"
+                    ] = value
+            diagnostics.append(row_diag)
+
     output_path = Path(cfg.get("output_path", "outputs/concept_vectors/clarification_vectors.pt"))
     ensure_dir(output_path.parent)
     torch.save({
@@ -488,6 +633,7 @@ def run(config: dict[str, Any]) -> None:
         "metadata": {
             "pooling": default_pooling,
             "mean_after_token": mean_after_token,
+            "format_as_generation_prompts": format_as_generation_prompts,
             "fit_splits": sorted(fit_splits or []),
             "eval_splits": sorted(eval_splits or []),
             "neutral_concepts_by_pooling": {

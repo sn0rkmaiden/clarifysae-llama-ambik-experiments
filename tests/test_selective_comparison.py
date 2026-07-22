@@ -58,6 +58,7 @@ def test_random_control_is_orthogonal_to_ask_and_gate(tmp_path):
     )
     key = module.make_orthogonal_random_bundle(
         vector_path=source,
+        gate_vector_path=source,
         ask_key="ask",
         gate_key="gate",
         output_path=output,

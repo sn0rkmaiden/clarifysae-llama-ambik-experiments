@@ -4,7 +4,7 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-MODE="${1:-smoke}"
+MODE="${1:-pilot}"
 PYTHON="${PYTHON:-python}"
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 export PYTHONUNBUFFERED=1
@@ -28,6 +28,7 @@ package_results() {
     -name 'manifest.json' -o \
     -name 'summary.csv' -o \
     -name 'summary.json' -o \
+    -name 'pilot_assessment.json' -o \
     -name 'category_summary.csv' -o \
     -name 'example_metrics.csv' -o \
     -name 'aggregate_metrics.csv' -o \
@@ -36,28 +37,26 @@ package_results() {
     -name 'random_direction.pt' \
   \) | sort > "$list"
 
-  local extra=()
-  if [[ "$mode" == "smoke" ]]; then
+  local extra=(
+    outputs/probe_corpus/ambik_probe_train60_dev20.jsonl
+    outputs/probe_corpus/ambik_probe_train60_dev20.metadata.json
+    outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.csv
+    outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.config.json
+    outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.csv
+    outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.config.json
+    outputs/selection/corrective_pilot_layer_selection.json
+    outputs/selection/corrective_pilot_layer_selection.csv
+    outputs/selection/corrective_pilot_strength_selection.json
+    outputs/selection/corrective_pilot_strength_ranking.csv
+    outputs/selection/corrective_pilot_gate_selection.json
+    outputs/selection/corrective_pilot_gate_ranking.csv
+  )
+  if [[ "$mode" == "pilot" || "$mode" == "smoke" ]]; then
     extra+=(
-      outputs/synthetic/clarification_counterfactuals_smoke.metadata.json
-      outputs/synthetic/clarification_counterfactuals_smoke.failures.json
-      outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.csv
-      outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.config.json
-      outputs/selection/smoke_layer_selection.json
-      outputs/selection/smoke_layer_selection.csv
-    )
-  else
-    extra+=(
-      outputs/synthetic/clarification_counterfactuals.metadata.json
-      outputs/synthetic/clarification_counterfactuals.failures.json
-      outputs/concept_vectors/llama32_1b_clarification_vectors.csv
-      outputs/concept_vectors/llama32_1b_clarification_vectors.config.json
-      outputs/selection/synthetic_layer_selection.json
-      outputs/selection/synthetic_layer_selection.csv
-      outputs/selection/selective_strength_selection.json
-      outputs/selection/selective_strength_ranking.csv
-      outputs/selection/selective_gate_selection.json
-      outputs/selection/selective_gate_ranking.csv
+      outputs/synthetic/clarification_counterfactuals_pilot.jsonl
+      outputs/synthetic/clarification_counterfactuals_pilot.metadata.json
+      outputs/synthetic/clarification_counterfactuals_pilot.failures.json
+      outputs/synthetic/clarification_counterfactuals_pilot.complete
     )
   fi
   for path in "${extra[@]}"; do
@@ -75,110 +74,175 @@ prepare_common() {
   "$PYTHON" scripts/prepare_dense_experiment_data.py \
     --smoke-pairs 4 \
     --selection-pairs 50 \
+    --probe-train-pairs 60 \
+    --pilot-select-pairs 20 \
+    --pilot-eval-pairs 20 \
     --heldout-pairs 100
   "$PYTHON" scripts/prepare_dense_experiment_configs.py static --root .
 }
 
+prepare_corrective_representations() {
+  local synthetic=outputs/synthetic/clarification_counterfactuals_pilot.jsonl
+  local actor=outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt
+  local probe_corpus=outputs/probe_corpus/ambik_probe_train60_dev20.jsonl
+  local gate=outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt
+  local selection=outputs/selection/corrective_pilot_layer_selection.json
+
+  if [[ ! -f outputs/synthetic/clarification_counterfactuals_pilot.complete ]]; then
+    rm -f \
+      "$synthetic" \
+      outputs/synthetic/clarification_counterfactuals_pilot.metadata.json \
+      outputs/synthetic/clarification_counterfactuals_pilot.failures.json
+    "$PYTHON" -m clarifysae_llama.runners.generate_synthetic_corpus \
+      --config configs/local/generate_clarification_counterfactuals_pilot.yaml
+  fi
+  require_file "$synthetic"
+  require_file outputs/synthetic/clarification_counterfactuals_pilot.complete
+
+  if [[ ! -f "$probe_corpus" ]]; then
+    "$PYTHON" scripts/build_ambik_probe_corpus.py \
+      --train data/raw/ambik/ambik_calib_probe_train60_paired.csv \
+      --dev data/raw/ambik/ambik_calib_pilot_select20_paired.csv \
+      --output "$probe_corpus"
+  fi
+
+  if [[ ! -f "$actor" ]]; then
+    "$PYTHON" -m clarifysae_llama.runners.extract_concept_vectors \
+      --config configs/local/extract_clarification_actor_vectors_pilot.yaml
+  fi
+  if [[ ! -f "$gate" ]]; then
+    "$PYTHON" -m clarifysae_llama.runners.extract_concept_vectors \
+      --config configs/local/extract_ambik_ambiguity_probe_pilot.yaml
+  fi
+
+  "$PYTHON" scripts/select_dense_layer.py \
+    --actor-diagnostics outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.csv \
+    --gate-diagnostics outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.csv \
+    --output "$selection"
+}
+
+prepare_pilot_selections() {
+  local actor=outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt
+  local gate=outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt
+  local selection=outputs/selection/corrective_pilot_layer_selection.json
+
+  "$PYTHON" scripts/prepare_dense_experiment_configs.py dense \
+    --root . \
+    --source corrective_pilot \
+    --vector-path "$actor" \
+    --gate-vector-path "$gate" \
+    --selection "$selection" \
+    --calib-dataset data/raw/ambik/ambik_calib_pilot_select20_paired.csv \
+    --test-dataset data/raw/ambik/ambik_calib_pilot_eval20_paired.csv \
+    --strength-values -0.20 -0.10 -0.05 0.05 0.10 0.20 \
+    --gate-values -1.0 0.0 1.0
+
+  if [[ ! -f outputs/selection/corrective_pilot_strength_selection.json ]]; then
+    "$PYTHON" -m clarifysae_llama.runners.sweep \
+      --config configs/local/corrective_pilot_sweep_dense_strengths.yaml
+    "$PYTHON" scripts/summarize_selective_clarification.py sweep \
+      --manifest outputs/sweeps/corrective_pilot_dense_unconditional_strength_sweep/manifest.csv \
+      --output-csv outputs/selection/corrective_pilot_strength_ranking.csv \
+      --selection-json outputs/selection/corrective_pilot_strength_selection.json \
+      --overask-penalty 0.50 \
+      --invalid-json-penalty 0.50 \
+      --exclude-zero-parameter
+  fi
+
+  "$PYTHON" scripts/prepare_dense_experiment_configs.py dense \
+    --root . \
+    --source corrective_pilot \
+    --vector-path "$actor" \
+    --gate-vector-path "$gate" \
+    --selection "$selection" \
+    --strength-selection outputs/selection/corrective_pilot_strength_selection.json \
+    --calib-dataset data/raw/ambik/ambik_calib_pilot_select20_paired.csv \
+    --test-dataset data/raw/ambik/ambik_calib_pilot_eval20_paired.csv \
+    --strength-values -0.20 -0.10 -0.05 0.05 0.10 0.20 \
+    --gate-values -1.0 0.0 1.0
+
+  if [[ ! -f outputs/selection/corrective_pilot_gate_selection.json ]]; then
+    "$PYTHON" -m clarifysae_llama.runners.sweep \
+      --config configs/local/corrective_pilot_sweep_gate_thresholds.yaml
+    "$PYTHON" scripts/summarize_selective_clarification.py sweep \
+      --manifest outputs/sweeps/corrective_pilot_dense_gate_threshold_sweep/manifest.csv \
+      --output-csv outputs/selection/corrective_pilot_gate_ranking.csv \
+      --selection-json outputs/selection/corrective_pilot_gate_selection.json \
+      --overask-penalty 0.50 \
+      --invalid-json-penalty 0.50
+  fi
+}
+
+run_pilot() {
+  prepare_common
+  prepare_corrective_representations
+  prepare_pilot_selections
+
+  local out=outputs/selective_corrective_pilot
+  "$PYTHON" scripts/build_selective_controls.py \
+    --prefix pilot \
+    --dataset data/raw/ambik/ambik_calib_pilot_eval20_paired.csv \
+    --vector-path outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt \
+    --gate-vector-path outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt \
+    --selection outputs/selection/corrective_pilot_layer_selection.json \
+    --strength-selection outputs/selection/corrective_pilot_strength_selection.json \
+    --gate-selection outputs/selection/corrective_pilot_gate_selection.json \
+    --output-root "$out"
+  run_config_manifest "$out/manifest.csv"
+  "$PYTHON" scripts/compare_selective_arms.py \
+    --manifest "$out/manifest.csv" \
+    --output-dir "$out/comparison" \
+    --bootstrap-samples 500 \
+    --seed 42
+  "$PYTHON" scripts/assess_corrective_pilot.py
+  package_results "$out" pilot
+}
+
 run_smoke() {
   prepare_common
-
-  if [[ ! -f outputs/synthetic/clarification_counterfactuals_smoke.jsonl ]]; then
-    "$PYTHON" -m clarifysae_llama.runners.generate_synthetic_corpus \
-      --config configs/local/generate_clarification_counterfactuals_smoke.yaml
-  fi
-  if [[ ! -f outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.pt ]]; then
-    "$PYTHON" -m clarifysae_llama.runners.extract_concept_vectors \
-      --config configs/local/extract_clarification_vectors_smoke.yaml
-  fi
-  "$PYTHON" scripts/select_dense_layer.py \
-    --diagnostics outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.csv \
-    --output outputs/selection/smoke_layer_selection.json
-
-  local out=outputs/selective_smoke_comparison
+  prepare_corrective_representations
+  local out=outputs/selective_corrective_smoke
   "$PYTHON" scripts/build_selective_controls.py \
-    --prefix smoke \
+    --prefix smoke_v2 \
     --dataset data/raw/ambik/ambik_calib_smoke_paired.csv \
-    --vector-path outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.pt \
-    --selection outputs/selection/smoke_layer_selection.json \
-    --strength 0.02 \
+    --vector-path outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt \
+    --gate-vector-path outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt \
+    --selection outputs/selection/corrective_pilot_layer_selection.json \
+    --strength 0.10 \
     --gate-threshold 0.0 \
     --output-root "$out"
   run_config_manifest "$out/manifest.csv"
   "$PYTHON" scripts/compare_selective_arms.py \
     --manifest "$out/manifest.csv" \
     --output-dir "$out/comparison" \
-    --bootstrap-samples 200 \
+    --bootstrap-samples 100 \
     --seed 42
   package_results "$out" smoke
 }
 
 run_main() {
   prepare_common
-
-  if [[ ! -f outputs/synthetic/clarification_counterfactuals.jsonl ]]; then
-    "$PYTHON" -m clarifysae_llama.runners.generate_synthetic_corpus \
-      --config configs/synthetic/generate_clarification_counterfactuals.yaml
-  fi
-  if [[ ! -f outputs/concept_vectors/llama32_1b_clarification_vectors.pt ]]; then
-    "$PYTHON" -m clarifysae_llama.runners.extract_concept_vectors \
-      --config configs/concept_vectors/extract_clarification_vectors.yaml
-  fi
-  "$PYTHON" scripts/select_dense_layer.py \
-    --diagnostics outputs/concept_vectors/llama32_1b_clarification_vectors.csv \
-    --output outputs/selection/synthetic_layer_selection.json
-
-  "$PYTHON" scripts/prepare_dense_experiment_configs.py dense \
-    --root . \
-    --source selective \
-    --vector-path outputs/concept_vectors/llama32_1b_clarification_vectors.pt \
-    --selection outputs/selection/synthetic_layer_selection.json \
-    --calib-dataset data/raw/ambik/ambik_calib_select50_paired.csv \
-    --test-dataset data/raw/ambik/ambik_test_eval100_paired.csv \
-    --strength-values -0.05 -0.02 0.0 0.02 0.05 \
-    --gate-values -1.0 0.0 1.0
-
-  if [[ ! -f outputs/selection/selective_strength_selection.json ]]; then
-    "$PYTHON" -m clarifysae_llama.runners.sweep \
-      --config configs/local/selective_sweep_dense_strengths.yaml
-    "$PYTHON" scripts/summarize_selective_clarification.py sweep \
-      --manifest outputs/sweeps/selective_dense_unconditional_strength_sweep/manifest.csv \
-      --output-csv outputs/selection/selective_strength_ranking.csv \
-      --selection-json outputs/selection/selective_strength_selection.json \
-      --overask-penalty 0.50 \
-      --invalid-json-penalty 0.25 \
-      --exclude-zero-parameter
-  fi
-
-  "$PYTHON" scripts/prepare_dense_experiment_configs.py dense \
-    --root . \
-    --source selective \
-    --vector-path outputs/concept_vectors/llama32_1b_clarification_vectors.pt \
-    --selection outputs/selection/synthetic_layer_selection.json \
-    --strength-selection outputs/selection/selective_strength_selection.json \
-    --calib-dataset data/raw/ambik/ambik_calib_select50_paired.csv \
-    --test-dataset data/raw/ambik/ambik_test_eval100_paired.csv \
-    --strength-values -0.05 -0.02 0.0 0.02 0.05 \
-    --gate-values -1.0 0.0 1.0
-
-  if [[ ! -f outputs/selection/selective_gate_selection.json ]]; then
-    "$PYTHON" -m clarifysae_llama.runners.sweep \
-      --config configs/local/selective_sweep_gate_thresholds.yaml
-    "$PYTHON" scripts/summarize_selective_clarification.py sweep \
-      --manifest outputs/sweeps/selective_dense_gate_threshold_sweep/manifest.csv \
-      --output-csv outputs/selection/selective_gate_ranking.csv \
-      --selection-json outputs/selection/selective_gate_selection.json \
-      --overask-penalty 0.50 \
-      --invalid-json-penalty 0.25
+  require_file outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt
+  require_file outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt
+  require_file outputs/selection/corrective_pilot_layer_selection.json
+  require_file outputs/selection/corrective_pilot_strength_selection.json
+  require_file outputs/selection/corrective_pilot_gate_selection.json
+  require_file outputs/selective_corrective_pilot/comparison/pilot_assessment.json
+  if [[ "${FORCE_MAIN:-0}" != "1" ]]; then
+    "$PYTHON" scripts/assess_corrective_pilot.py --require-go
+  else
+    echo "WARNING: FORCE_MAIN=1 bypasses the corrective-pilot go/no-go check." >&2
   fi
 
   local out=outputs/selective_main_comparison
   "$PYTHON" scripts/build_selective_controls.py \
     --prefix main \
     --dataset data/raw/ambik/ambik_test_eval100_paired.csv \
-    --vector-path outputs/concept_vectors/llama32_1b_clarification_vectors.pt \
-    --selection outputs/selection/synthetic_layer_selection.json \
-    --strength-selection outputs/selection/selective_strength_selection.json \
-    --gate-selection outputs/selection/selective_gate_selection.json \
+    --vector-path outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt \
+    --gate-vector-path outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt \
+    --selection outputs/selection/corrective_pilot_layer_selection.json \
+    --strength-selection outputs/selection/corrective_pilot_strength_selection.json \
+    --gate-selection outputs/selection/corrective_pilot_gate_selection.json \
     --output-root "$out"
   run_config_manifest "$out/manifest.csv"
   "$PYTHON" scripts/compare_selective_arms.py \
@@ -191,9 +255,10 @@ run_main() {
 
 case "$MODE" in
   smoke) run_smoke ;;
+  pilot) run_pilot ;;
   main) run_main ;;
   *)
-    echo "Usage: $0 {smoke|main}" >&2
+    echo "Usage: $0 {smoke|pilot|main}" >&2
     exit 2
     ;;
 esac

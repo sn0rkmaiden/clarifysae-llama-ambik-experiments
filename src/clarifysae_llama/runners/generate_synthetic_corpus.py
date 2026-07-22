@@ -69,10 +69,19 @@ def _validate_scenario(obj: dict[str, Any], *, strict: bool = True) -> dict[str,
         "targeted_question", "direct_response", "guessing_response", "generic_question",
         "unnecessary_question",
     ]
-    missing = [key for key in required if not str(obj.get(key, "")).strip()]
+    missing = [key for key in required if key not in obj or obj.get(key) is None]
     if missing:
         raise ValueError(f"Generated scenario is missing fields: {missing}")
-    scenario = {key: str(obj[key]).strip() for key in required}
+    wrong_types = [key for key in required if not isinstance(obj.get(key), str)]
+    if wrong_types:
+        raise ValueError(
+            "Every scenario field must be a JSON string; wrong types for: "
+            f"{wrong_types}"
+        )
+    empty = [key for key in required if not obj[key].strip()]
+    if empty:
+        raise ValueError(f"Generated scenario has empty fields: {empty}")
+    scenario = {key: obj[key].strip() for key in required}
 
     joined = " ".join(scenario.values()).lower()
     forbidden = sorted(term for term in FORBIDDEN_META_TERMS if term in joined)
@@ -116,25 +125,53 @@ def _validate_scenario(obj: dict[str, Any], *, strict: bool = True) -> dict[str,
 def _writer_prompt(topic: str, scenario_index: int) -> str:
     return f"""Create one realistic matched counterfactual scenario about {topic} for mechanistic-interpretability research.
 
-The goal is to separate these concepts: (1) recognizing that a required variable is not specified, (2) choosing to ask rather than guess, and (3) asking for the specific variable rather than merely producing an interrogative sentence.
+Return exactly one JSON object and nothing else. Every value must be a JSON string, never a list, object, boolean, or number. Use exactly these keys:
+- context
+- ambiguous_instruction
+- clear_instruction
+- missing_slot
+- targeted_question
+- direct_response
+- guessing_response
+- generic_question
+- unnecessary_question
 
-Return exactly one JSON object with these string fields:
-- context: all relevant environment/background facts
-- ambiguous_instruction: an instruction with exactly one consequential unspecified slot and at least two plausible values
-- clear_instruction: the same instruction with that slot explicitly filled; change as little wording as possible
-- missing_slot: a short noun phrase naming the information that is needed
-- targeted_question: one concise, actionable question that asks only for that slot and uses at least one important word from missing_slot
-- direct_response: an appropriate direct response/action to the clear instruction
-- guessing_response: a fluent response to the ambiguous instruction that silently selects one plausible value (hard negative)
-- generic_question: an interrogative response to the ambiguous instruction that does not identify or name the missing slot (hard negative)
-- unnecessary_question: a plausible but needless question asked after the clear instruction (hard negative)
+Semantic requirements:
+1. ambiguous_instruction leaves exactly one consequential choice unspecified, with at least two plausible values.
+2. clear_instruction is the same instruction with only that choice filled.
+3. missing_slot is a short noun phrase naming the choice.
+4. targeted_question asks only for that choice and repeats at least one important content word from missing_slot.
+5. guessing_response answers the ambiguous instruction by silently choosing one plausible value and must not be a question.
+6. generic_question is a question such as asking for more details, but it must not contain any content word from missing_slot.
+7. direct_response appropriately answers the clear instruction and must not be a question.
+8. unnecessary_question is a plausible but needless question after the clear instruction.
 
-Constraints:
-- Do not use meta-words such as “ambiguous”, “underspecified”, “clarification”, “clarify”, or “missing information” inside the scenario.
-- Make the question content semantically necessary, not merely stylistic.
-- The clear and unclear instructions must be a minimal pair.
-- Keep every field short enough that the whole JSON is under 350 words.
-- Scenario id seed: {scenario_index}.
+Formatting requirements:
+- targeted_question, generic_question, and unnecessary_question must end with ?.
+- Do not use the words ambiguous, ambiguity, underspecified, under-specified, clarification, clarify, or missing information in any value.
+- Keep the ambiguous/clear instructions as a minimal pair.
+- Keep the complete JSON under 350 words.
+- Do not wrap the JSON in markdown or add commentary.
+- Scenario seed: {scenario_index}.
+"""
+
+
+def _repair_prompt(
+    original_prompt: str,
+    previous_output: str,
+    error: Exception,
+    attempt: int,
+) -> str:
+    previous = previous_output.strip()[:2400]
+    return f"""{original_prompt}
+
+Your previous attempt failed validation. Repair it and return a completely corrected JSON object only.
+Validation error: {type(error).__name__}: {error}
+Repair attempt: {attempt}
+Previous output:
+{previous}
+
+Do not explain the repair. Return only the corrected JSON object with all nine values as JSON strings.
 """
 
 
@@ -241,6 +278,8 @@ def run(config: dict[str, Any]) -> None:
     corpus_cfg = config.get("synthetic_corpus", {})
     output_path = Path(corpus_cfg.get("output_path", "outputs/synthetic/clarification_counterfactuals.jsonl"))
     ensure_dir(output_path.parent)
+    completion_path = output_path.with_suffix(".complete")
+    completion_path.unlink(missing_ok=True)
 
     topics = [str(x) for x in corpus_cfg.get("topics", DEFAULT_TOPICS)]
     n_per_topic = int(corpus_cfg.get("scenarios_per_topic", 12))
@@ -260,13 +299,20 @@ def run(config: dict[str, Any]) -> None:
     rows: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
     accepted_scenarios = 0
+    accepted_by_topic = {topic: 0 for topic in topics}
+    total_generation_calls = 0
+    scenario_slots = len(topics) * n_per_topic
     for topic_idx, topic in enumerate(tqdm(topics, desc="Topics")):
         for local_idx in range(n_per_topic):
             scenario_index = topic_idx * n_per_topic + local_idx
-            prompt = _writer_prompt(topic, scenario_index)
+            original_prompt = _writer_prompt(topic, scenario_index)
+            prompt = original_prompt
             last_error: Exception | None = None
+            attempts: list[dict[str, Any]] = []
             for attempt in range(max_retries + 1):
+                raw = ""
                 try:
+                    total_generation_calls += 1
                     raw = backend.generate(prompt)
                     scenario = _validate_scenario(
                         _extract_json_object(raw), strict=strict_validation
@@ -276,16 +322,26 @@ def run(config: dict[str, Any]) -> None:
                         scenario_id, topic, scenario, split=split_map[topic]
                     ))
                     accepted_scenarios += 1
+                    accepted_by_topic[topic] += 1
                     last_error = None
                     break
                 except Exception as exc:  # preserve failed generations for audit
                     last_error = exc
+                    attempts.append({
+                        "attempt": attempt,
+                        "error": f"{type(exc).__name__}: {exc}",
+                        "raw_output": raw[:3000],
+                    })
+                    prompt = _repair_prompt(
+                        original_prompt, raw, exc, attempt + 1
+                    )
             if last_error is not None:
                 failures.append({
                     "topic": topic,
                     "scenario_index": scenario_index,
                     "split": split_map[topic],
                     "error": repr(last_error),
+                    "attempts": attempts,
                 })
 
     with output_path.open("w", encoding="utf-8") as f:
@@ -297,22 +353,62 @@ def run(config: dict[str, Any]) -> None:
         split: sum(1 for row in rows if row["split"] == split)
         for split in ("train", "dev", "test")
     }
+    acceptance_rate = (
+        float(accepted_scenarios / scenario_slots) if scenario_slots else 0.0
+    )
     metadata = {
         "rows": len(rows),
         "rows_per_scenario": 10,
+        "scenario_slots": scenario_slots,
         "scenarios": accepted_scenarios,
+        "acceptance_rate": acceptance_rate,
         "failures": len(failures),
+        "generation_calls": total_generation_calls,
         "topics": topics,
+        "accepted_by_topic": accepted_by_topic,
         "topic_splits": split_map,
         "row_split_counts": split_counts,
         "scenarios_per_topic": n_per_topic,
         "writer_model": config["model"]["name"],
         "strict_validation": strict_validation,
     }
-    output_path.with_suffix(".metadata.json").write_text(
+    metadata_path = output_path.with_suffix(".metadata.json")
+    metadata_path.write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     print(json.dumps(metadata, indent=2))
+
+    minimum_acceptance_rate = float(
+        corpus_cfg.get("minimum_acceptance_rate", 0.0)
+    )
+    require_topic_coverage = bool(
+        corpus_cfg.get("require_topic_coverage", False)
+    )
+    missing_topics = [
+        topic for topic, count in accepted_by_topic.items() if count == 0
+    ]
+    problems: list[str] = []
+    if acceptance_rate < minimum_acceptance_rate:
+        problems.append(
+            f"acceptance_rate={acceptance_rate:.3f} < "
+            f"minimum_acceptance_rate={minimum_acceptance_rate:.3f}"
+        )
+    if require_topic_coverage and missing_topics:
+        problems.append(f"topics with zero accepted scenarios: {missing_topics}")
+    if problems:
+        raise RuntimeError(
+            "Synthetic corpus failed its quality gate: " + "; ".join(problems)
+            + f". Inspect {failure_path} and {metadata_path}."
+        )
+    completion_path.write_text(
+        json.dumps({
+            "output": str(output_path),
+            "metadata": str(metadata_path),
+            "acceptance_rate": acceptance_rate,
+            "scenarios": accepted_scenarios,
+        }, indent=2),
+        encoding="utf-8",
+    )
 
 
 def parse_args() -> argparse.Namespace:

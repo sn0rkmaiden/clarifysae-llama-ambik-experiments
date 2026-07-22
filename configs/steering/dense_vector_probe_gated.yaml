@@ -39,7 +39,8 @@ steering:
     enabled: true
     vector_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
     vector_key: ambiguity_state__ridge_probe__model_layers_10
-    mode: sigmoid
+    # Primary causal test: truly apply or withhold the actor direction.
+    mode: hard
     threshold: 0.0
     # null uses the post-PCA calibrated score scale stored in the vector bundle.
     temperature: null

@@ -54,6 +54,7 @@ def load_vector_record(bundle: dict[str, Any], key: str) -> dict[str, Any]:
 def make_orthogonal_random_bundle(
     *,
     vector_path: Path,
+    gate_vector_path: Path,
     ask_key: str,
     gate_key: str,
     output_path: Path,
@@ -63,7 +64,12 @@ def make_orthogonal_random_bundle(
     if not isinstance(bundle, dict):
         raise TypeError(f"{vector_path} is not a dense-vector bundle")
     ask_record = load_vector_record(bundle, ask_key)
-    gate_record = load_vector_record(bundle, gate_key)
+    gate_bundle = torch.load(
+        gate_vector_path, map_location="cpu", weights_only=False
+    )
+    if not isinstance(gate_bundle, dict):
+        raise TypeError(f"{gate_vector_path} is not a dense-vector bundle")
+    gate_record = load_vector_record(gate_bundle, gate_key)
     ask = ask_record["vector"].detach().float().flatten()
     gate = gate_record["vector"].detach().float().flatten()
     if ask.shape != gate.shape:
@@ -92,6 +98,7 @@ def make_orthogonal_random_bundle(
         {
             "format": "clarifysae_random_direction_control_v1",
             "source_vector_path": str(vector_path),
+            "source_gate_vector_path": str(gate_vector_path),
             "seed": int(seed),
             "vectors": {
                 key: {
@@ -131,6 +138,7 @@ def dense_config(
     strength: float,
     threshold: float,
     arm: str,
+    gate_enabled: bool = True,
 ) -> dict[str, Any]:
     config = copy.deepcopy(template)
     config["experiment_name"] = experiment_name
@@ -143,7 +151,7 @@ def dense_config(
     steering["hookpoint"] = hookpoint
     steering["module_path"] = hookpoint
     steering["strength"] = float(strength)
-    steering["gate"]["enabled"] = True
+    steering["gate"]["enabled"] = bool(gate_enabled)
     steering["gate"]["vector_path"] = gate_vector_path
     steering["gate"]["vector_key"] = gate_vector_key
     steering["gate"]["threshold"] = float(threshold)
@@ -151,6 +159,7 @@ def dense_config(
         "arm": arm,
         "strength": float(strength),
         "gate_threshold": float(threshold),
+        "gate_enabled": bool(gate_enabled),
     }
     return config
 
@@ -160,6 +169,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prefix", required=True)
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--vector-path", required=True)
+    parser.add_argument("--gate-vector-path", default=None)
     parser.add_argument("--selection", required=True)
     parser.add_argument("--strength-selection", default=None)
     parser.add_argument("--gate-selection", default=None)
@@ -185,8 +195,9 @@ def main() -> None:
     args = parse_args()
     dataset = Path(args.dataset)
     vector_path = Path(args.vector_path)
+    gate_vector_path = Path(args.gate_vector_path or args.vector_path)
     selection_path = Path(args.selection)
-    for path in (dataset, vector_path, selection_path):
+    for path in (dataset, vector_path, gate_vector_path, selection_path):
         if not path.exists():
             raise FileNotFoundError(path)
 
@@ -204,6 +215,7 @@ def main() -> None:
     random_path = output_root / "artifacts/random_direction.pt"
     random_key = make_orthogonal_random_bundle(
         vector_path=vector_path,
+        gate_vector_path=gate_vector_path,
         ask_key=ask_key,
         gate_key=gate_key,
         output_path=random_path,
@@ -230,6 +242,9 @@ def main() -> None:
                 "gate_threshold": config.get("steering", {}).get("gate", {}).get(
                     "threshold", None
                 ),
+                "gate_enabled": config.get("steering", {}).get("gate", {}).get(
+                    "enabled", False
+                ),
             }
         )
 
@@ -242,6 +257,23 @@ def main() -> None:
     baseline["run_metadata"] = {"arm": "baseline"}
     register("baseline", baseline)
 
+    ungated = dense_config(
+        dense_template,
+        experiment_name=f"{args.prefix}_dense_ungated",
+        dataset_path=str(dataset),
+        output_root=str(output_root),
+        vector_path=str(vector_path),
+        vector_key=ask_key,
+        gate_vector_path=str(gate_vector_path),
+        gate_vector_key=gate_key,
+        hookpoint=hookpoint,
+        strength=strength,
+        threshold=threshold,
+        arm="dense_ungated",
+        gate_enabled=False,
+    )
+    register("dense_ungated", ungated)
+
     selected = dense_config(
         dense_template,
         experiment_name=f"{args.prefix}_dense_selected",
@@ -249,7 +281,7 @@ def main() -> None:
         output_root=str(output_root),
         vector_path=str(vector_path),
         vector_key=ask_key,
-        gate_vector_path=str(vector_path),
+        gate_vector_path=str(gate_vector_path),
         gate_vector_key=gate_key,
         hookpoint=hookpoint,
         strength=strength,
@@ -265,7 +297,7 @@ def main() -> None:
         output_root=str(output_root),
         vector_path=str(vector_path),
         vector_key=ask_key,
-        gate_vector_path=str(vector_path),
+        gate_vector_path=str(gate_vector_path),
         gate_vector_key=gate_key,
         hookpoint=hookpoint,
         strength=-strength,
@@ -281,7 +313,7 @@ def main() -> None:
         output_root=str(output_root),
         vector_path=str(random_path),
         vector_key=random_key,
-        gate_vector_path=str(vector_path),
+        gate_vector_path=str(gate_vector_path),
         gate_vector_key=gate_key,
         hookpoint=hookpoint,
         strength=strength,
@@ -330,6 +362,7 @@ def main() -> None:
         "prefix": args.prefix,
         "dataset": str(dataset),
         "vector_path": str(vector_path),
+        "gate_vector_path": str(gate_vector_path),
         "selection_path": str(selection_path),
         "hookpoint": hookpoint,
         "ask_vector_key": ask_key,

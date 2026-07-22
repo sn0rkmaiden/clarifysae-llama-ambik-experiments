@@ -202,6 +202,9 @@ def aggregate_metrics(
     json_schema_valid_rate = None
     if 'json_schema_valid' in example_metrics.columns:
         json_schema_valid_rate = float(sum(1 for row in rows if bool(row.get('json_schema_valid'))) / total_examples)
+    json_protocol_valid_rate = None
+    if 'json_protocol_valid' in example_metrics.columns:
+        json_protocol_valid_rate = float(sum(1 for row in rows if bool(row.get('json_protocol_valid'))) / total_examples)
     json_recoverable_parse_rate = None
     if 'json_recoverable_parse' in example_metrics.columns:
         json_recoverable_parse_rate = float(sum(1 for row in rows if bool(row.get('json_recoverable_parse'))) / total_examples)
@@ -234,6 +237,8 @@ def aggregate_metrics(
         overall['json_exact_valid_rate'] = json_exact_valid_rate
     if json_schema_valid_rate is not None:
         overall['json_schema_valid_rate'] = json_schema_valid_rate
+    if json_protocol_valid_rate is not None:
+        overall['json_protocol_valid_rate'] = json_protocol_valid_rate
     if json_recoverable_parse_rate is not None:
         overall['json_recoverable_parse_rate'] = json_recoverable_parse_rate
 
@@ -294,6 +299,8 @@ def aggregate_metrics(
             category_row['json_exact_valid_rate'] = float(sum(1 for row in cat_rows if bool(row.get('json_exact_valid'))) / len(cat_rows))
         if 'json_schema_valid' in example_metrics.columns:
             category_row['json_schema_valid_rate'] = float(sum(1 for row in cat_rows if bool(row.get('json_schema_valid'))) / len(cat_rows))
+        if 'json_protocol_valid' in example_metrics.columns:
+            category_row['json_protocol_valid_rate'] = float(sum(1 for row in cat_rows if bool(row.get('json_protocol_valid'))) / len(cat_rows))
         if 'json_recoverable_parse' in example_metrics.columns:
             category_row['json_recoverable_parse_rate'] = float(sum(1 for row in cat_rows if bool(row.get('json_recoverable_parse'))) / len(cat_rows))
 
@@ -328,6 +335,8 @@ def aggregate_metrics(
             overall[f'json_exact_valid_rate__{category}'] = category_row['json_exact_valid_rate']
         if 'json_schema_valid_rate' in category_row:
             overall[f'json_schema_valid_rate__{category}'] = category_row['json_schema_valid_rate']
+        if 'json_protocol_valid_rate' in category_row:
+            overall[f'json_protocol_valid_rate__{category}'] = category_row['json_protocol_valid_rate']
         if 'json_recoverable_parse_rate' in category_row:
             overall[f'json_recoverable_parse_rate__{category}'] = category_row['json_recoverable_parse_rate']
         if enable_nli:

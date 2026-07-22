@@ -152,8 +152,16 @@ def _run_generation_stage(
         chunk = prompt_rows[start:start + batch_size]
         prompts = [row[prompt_key] for row in chunk]
         predictions = backend.generate_batch(prompts)
-        for row, raw_output in zip(chunk, predictions):
+        diagnostics_getter = getattr(
+            backend, "get_last_steering_diagnostics", None
+        )
+        diagnostics = (
+            list(diagnostics_getter()) if diagnostics_getter is not None else []
+        )
+        for index, (row, raw_output) in enumerate(zip(chunk, predictions)):
             row[output_key] = raw_output
+            if index < len(diagnostics):
+                row["steering_diagnostics"] = diagnostics[index]
 
 
 def _coerce_predicted_ambiguous(value: Any) -> bool | None:
@@ -188,7 +196,13 @@ def _compact_prediction_row(row: dict[str, Any], *, enable_nli: bool) -> dict[st
         'json_parsed_output',
         'json_exact_valid',
         'json_schema_valid',
+        'json_protocol_valid',
         'json_recoverable_parse',
+        'gate_raw_score',
+        'gate_standardized_score',
+        'gate_weight',
+        'steering_delta_norm',
+        'steering_applied',
     ]
     if enable_nli:
         keep.extend([
@@ -232,7 +246,13 @@ def _select_example_metric_columns(raw_df: pd.DataFrame, *, enable_nli: bool) ->
         'resolved_proxy_any',
         'json_exact_valid',
         'json_schema_valid',
+        'json_protocol_valid',
         'json_recoverable_parse',
+        'gate_raw_score',
+        'gate_standardized_score',
+        'gate_weight',
+        'steering_delta_norm',
+        'steering_applied',
     ]
     if enable_nli:
         columns.extend([
@@ -267,7 +287,9 @@ def _finalize_prediction_rows(prompt_rows: list[dict[str, Any]], eval_settings: 
 
         predicted_ambiguous = _coerce_predicted_ambiguous(parsed.get('ambiguous')) if parsed else None
         model_questions = normalize_questions(parsed.get('question', parsed.get('questions', []))) if parsed else []
-        json_metrics = assess_json_output(raw_output)
+        json_metrics = assess_json_output(
+            raw_output, max_questions=eval_settings['max_questions']
+        )
 
         prediction_row.update({
             'prompt': row['prompt'],
@@ -276,8 +298,20 @@ def _finalize_prediction_rows(prompt_rows: list[dict[str, Any]], eval_settings: 
             'json_parsed_output': json_metrics['json_parsed_output'],
             'json_exact_valid': json_metrics['json_exact_valid'],
             'json_schema_valid': json_metrics['json_schema_valid'],
+            'json_protocol_valid': json_metrics['json_protocol_valid'],
             'json_recoverable_parse': json_metrics['json_recoverable_parse'],
         })
+        steering_diagnostics = row.get('steering_diagnostics')
+        if isinstance(steering_diagnostics, dict):
+            for key in (
+                'gate_raw_score',
+                'gate_standardized_score',
+                'gate_weight',
+                'steering_delta_norm',
+                'steering_applied',
+            ):
+                if key in steering_diagnostics:
+                    prediction_row[key] = steering_diagnostics[key]
 
         metrics = compute_example_metrics(
             ambiguity_type=row['ambiguity_type'],

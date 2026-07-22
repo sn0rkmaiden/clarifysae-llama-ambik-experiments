@@ -1,4 +1,4 @@
-experiment_name: extract_clarification_vectors
+experiment_name: extract_clarification_actor_vectors
 seed: 42
 
 model:
@@ -11,41 +11,47 @@ generation:
   do_sample: false
 
 prompting:
+  # Synthetic actor transcripts already contain explicit user/assistant markers.
   use_chat_template: false
 
 concept_discovery:
   dataset_path: outputs/synthetic/clarification_counterfactuals.jsonl
-  output_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
-  concepts: [ambiguity_state, ask_trajectory, targeted_question, restraint_on_clear]
+  output_path: outputs/concept_vectors/llama32_1b_clarification_actor_vectors.pt
+  concepts: [ask_trajectory, targeted_question]
   hookpoints:
     - model.layers.8
     - model.layers.10
     - model.layers.12
     - model.layers.14
-  # Optional per-hookpoint override, useful for non-Llama architectures.
   module_paths: {}
   batch_size: 8
   max_length: 512
-
-  # "recommended" uses last-token pooling for ambiguity_state and assistant-span
-  # pooling for output-behavior concepts. To reproduce Anthropic's story pooling
-  # more literally, use pooling: mean_after_token and mean_after_token: 50.
   pooling: recommended
   mean_after_token: 50
-  methods: [paired_difference, difference_in_means, ridge_probe]
+  methods: [paired_difference]
   pair_id_field: pair_id
   ridge_l2: 1.0
-
-  # Fit on held-out topics and report detector diagnostics on unseen topics.
   fit_splits: [train]
   eval_splits: [dev]
 
-  # Prompt and response representations have different pooling distributions,
-  # so estimate their nuisance subspaces from separate neutral corpora.
+  # v_actor = .5*(targeted - silent guess) + .5*(targeted - generic question)
+  composite_vectors:
+    - name: targeted_clarification
+      method: composite_paired_difference
+      components:
+        - concept: ask_trajectory
+          method: paired_difference
+          weight: 0.5
+        - concept: targeted_question
+          method: paired_difference
+          weight: 0.5
+      diagnostic_concepts:
+        ask_vs_guess: ask_trajectory
+        targeted_vs_generic: targeted_question
+
   neutral_pca:
     required: true
     concepts_by_pooling:
-      last_nonpad: [neutral_prompt]
       assistant_mean: [neutral_response]
     variance_fraction: 0.5
     max_components: 64

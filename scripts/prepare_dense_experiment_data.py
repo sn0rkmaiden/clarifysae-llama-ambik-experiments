@@ -42,6 +42,36 @@ def deterministic_subset(df: pd.DataFrame, *, n: int, seed: int, label: str) -> 
     return df.iloc[chosen].copy().reset_index(drop=True)
 
 
+
+def deterministic_partition(
+    df: pd.DataFrame,
+    *,
+    sizes: list[int],
+    seed: int,
+    label: str,
+) -> list[pd.DataFrame]:
+    if any(size <= 0 for size in sizes):
+        raise ValueError("partition sizes must all be positive")
+    if sum(sizes) > len(df):
+        raise ValueError(
+            f"partition sizes sum to {sum(sizes)}, but dataset has only {len(df)} rows"
+        )
+    ranked: list[tuple[str, int]] = []
+    for position, (_, row) in enumerate(df.iterrows()):
+        source_id = str(row.get("id", position))
+        digest = hashlib.sha256(
+            f"{seed}:{label}:{source_id}".encode("utf-8")
+        ).hexdigest()
+        ranked.append((digest, position))
+    order = [position for _digest, position in sorted(ranked)]
+    parts: list[pd.DataFrame] = []
+    start = 0
+    for size in sizes:
+        chosen = sorted(order[start:start + size])
+        parts.append(df.iloc[chosen].copy().reset_index(drop=True))
+        start += size
+    return parts
+
 def validate(df: pd.DataFrame, path: Path) -> pd.DataFrame:
     missing = REQUIRED_COLUMNS - set(df.columns)
     if missing:
@@ -147,6 +177,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--smoke-pairs", type=int, default=4)
     parser.add_argument("--selection-pairs", type=int, default=50)
+    parser.add_argument("--probe-train-pairs", type=int, default=60)
+    parser.add_argument("--pilot-select-pairs", type=int, default=20)
+    parser.add_argument("--pilot-eval-pairs", type=int, default=20)
     parser.add_argument("--heldout-pairs", type=int, default=100)
     return parser.parse_args()
 
@@ -182,6 +215,17 @@ def main() -> None:
         ),
     ]
 
+    probe_train, pilot_select, pilot_eval = deterministic_partition(
+        calib_df,
+        sizes=[
+            args.probe_train_pairs,
+            args.pilot_select_pairs,
+            args.pilot_eval_pairs,
+        ],
+        seed=args.seed,
+        label="corrective_pilot_partition",
+    )
+
     derived_sets = [
         (
             deterministic_subset(
@@ -196,6 +240,21 @@ def main() -> None:
             ),
             calib.with_name("ambik_calib_select50.csv"),
             calib.with_name("ambik_calib_select50_paired.csv"),
+        ),
+        (
+            probe_train,
+            calib.with_name("ambik_calib_probe_train60.csv"),
+            calib.with_name("ambik_calib_probe_train60_paired.csv"),
+        ),
+        (
+            pilot_select,
+            calib.with_name("ambik_calib_pilot_select20.csv"),
+            calib.with_name("ambik_calib_pilot_select20_paired.csv"),
+        ),
+        (
+            pilot_eval,
+            calib.with_name("ambik_calib_pilot_eval20.csv"),
+            calib.with_name("ambik_calib_pilot_eval20_paired.csv"),
         ),
         (
             deterministic_subset(

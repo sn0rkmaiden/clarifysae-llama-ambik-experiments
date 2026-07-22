@@ -20,6 +20,10 @@ KEY_METRICS = [
     "avg_num_questions_clear",
     "ambiguity_decision_accuracy",
     "json_schema_valid_rate",
+    "json_protocol_valid_rate",
+    "mean_gate_weight",
+    "steering_applied_rate",
+    "mean_steering_delta_norm",
 ]
 
 
@@ -100,9 +104,31 @@ def summarize(frame: pd.DataFrame) -> dict[str, Any]:
     for column, name in (
         ("json_exact_valid", "json_exact_valid_rate"),
         ("json_schema_valid", "json_schema_valid_rate"),
+        ("json_protocol_valid", "json_protocol_valid_rate"),
         ("json_recoverable_parse", "json_recoverable_parse_rate"),
     ):
         result[name] = float(to_bool(frame[column]).mean()) if column in frame.columns else None
+
+    result["mean_gate_raw_score"] = (
+        safe_mean(frame["gate_raw_score"])
+        if "gate_raw_score" in frame.columns else None
+    )
+    result["mean_gate_standardized_score"] = (
+        safe_mean(frame["gate_standardized_score"])
+        if "gate_standardized_score" in frame.columns else None
+    )
+    result["mean_gate_weight"] = (
+        safe_mean(frame["gate_weight"])
+        if "gate_weight" in frame.columns else None
+    )
+    result["steering_applied_rate"] = (
+        float(to_bool(frame["steering_applied"]).mean())
+        if "steering_applied" in frame.columns else None
+    )
+    result["mean_steering_delta_norm"] = (
+        safe_mean(frame["steering_delta_norm"])
+        if "steering_delta_norm" in frame.columns else None
+    )
     return result
 
 
@@ -124,6 +150,18 @@ def category_summaries(frame: pd.DataFrame) -> list[dict[str, Any]]:
             else None,
             "json_schema_valid_rate": float(to_bool(group["json_schema_valid"]).mean())
             if "json_schema_valid" in group.columns
+            else None,
+            "json_protocol_valid_rate": float(to_bool(group["json_protocol_valid"]).mean())
+            if "json_protocol_valid" in group.columns
+            else None,
+            "mean_gate_weight": safe_mean(group["gate_weight"])
+            if "gate_weight" in group.columns
+            else None,
+            "steering_applied_rate": float(to_bool(group["steering_applied"]).mean())
+            if "steering_applied" in group.columns
+            else None,
+            "mean_steering_delta_norm": safe_mean(group["steering_delta_norm"])
+            if "steering_delta_norm" in group.columns
             else None,
         }
         rows.append(row)
@@ -251,7 +289,10 @@ def main() -> None:
             "avg_num_questions_ambiguous",
             "avg_num_questions_clear",
             "ambiguity_decision_accuracy",
-            "json_schema_valid_rate",
+            "json_protocol_valid_rate",
+            "mean_gate_weight",
+            "steering_applied_rate",
+            "mean_steering_delta_norm",
         )
         if column in overall.columns
     ]

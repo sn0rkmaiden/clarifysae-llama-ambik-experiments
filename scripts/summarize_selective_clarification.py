@@ -61,6 +61,10 @@ def summarize_metrics(path: Path) -> dict[str, Any]:
         result["json_schema_valid_rate"] = float(_to_bool(df["json_schema_valid"]).mean())
     else:
         result["json_schema_valid_rate"] = 1.0
+    if "json_protocol_valid" in df.columns:
+        result["json_protocol_valid_rate"] = float(_to_bool(df["json_protocol_valid"]).mean())
+    else:
+        result["json_protocol_valid_rate"] = result["json_schema_valid_rate"]
     return result
 
 
@@ -120,7 +124,7 @@ def main() -> None:
         row.update(summary)
         resolved = float(summary.get("resolved_proxy_any_ambiguous") or 0.0)
         overask = float(summary.get("overasking_rate_clear") or 0.0)
-        valid = float(summary.get("json_schema_valid_rate") or 0.0)
+        valid = float(summary.get("json_protocol_valid_rate") or 0.0)
         row["selection_utility"] = (
             resolved
             - float(args.overask_penalty) * overask
@@ -151,7 +155,7 @@ def main() -> None:
             "selection_rule": (
                 "resolved_proxy_any_ambiguous - overask_penalty * "
                 "overasking_rate_clear - invalid_json_penalty * "
-                "(1 - json_schema_valid_rate)"
+                "(1 - json_protocol_valid_rate)"
             ),
             "overask_penalty": float(args.overask_penalty),
             "invalid_json_penalty": float(args.invalid_json_penalty),

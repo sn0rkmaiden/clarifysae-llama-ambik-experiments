@@ -1,0 +1,2462 @@
+diff --git a/README.md b/README.md
+index 477612b..8bf3067 100644
+--- a/README.md
++++ b/README.md
+@@ -202,21 +202,44 @@ To run the dense clarification study without manually editing YAML files, follow
+ bash scripts/run_dense_clarification_pipeline.sh help
+ ```
+ 
+-## Recommended selective dense-versus-SAE comparison
++## Recommended corrective pilot: dense clarification versus SAE steering
+ 
+-The repository-compatible comparison added for the clarification study runs the
+-same held-out matched prompts under five arms: unsteered baseline, selected
+-probe-gated dense direction, sign-flipped dense direction, orthogonal random
+-direction with the same gate, and the frozen Llama-1B SAE baseline
+-(layer 12, feature 6230, strength -5).
++The current staged comparison first runs a **corrective pilot**, not the final
++100-pair test. It separates the two functions needed for selective
++clarification:
++
++- a synthetic **targeted-clarification actor direction**, combining
++  targeted-question versus silent-guess and targeted-question versus generic-
++  question contrasts;
++- a real-AmbiK **ambiguity probe**, trained on 60 matched ambiguous/clear pairs
++  and validated on 20 disjoint calibration pairs.
++
++The pilot evaluates 20 further disjoint calibration pairs under six arms:
++unsteered baseline, ungated dense actor, probe-gated dense actor, sign-flipped
++actor, orthogonal random direction with the same gate, and the frozen Llama-1B
++SAE baseline (layer 12, feature 6230, strength -5). It also logs per-example
++gate scores, gate weights, applied steering norms, and strict JSON-protocol
++validity.
++
++```bash
++bash scripts/run_selective_comparison.sh pilot
++```
++
++The runner generates 60 synthetic scenario slots, requires at least 80%
++acceptance and coverage of all 20 topics, selects a layer using held-out actor
++and gate AUROCs, sweeps a small diagnostic strength/gate grid, and writes an
++automatic go/no-go report to:
++
++```text
++outputs/selective_corrective_pilot/comparison/pilot_assessment.json
++```
++
++Only after reviewing a `GO_TO_MAIN` pilot should the held-out 100-pair test be
++run:
+ 
+ ```bash
+-bash scripts/run_selective_comparison.sh smoke
+ bash scripts/run_selective_comparison.sh main
+ ```
+ 
+-The smoke command verifies the complete generation, activation extraction,
+-layer selection, dense steering, random control, SAE steering, evaluation, and
+-summary path on four pairs. The main command uses 50 calibration pairs for the
+-small strength/gate selection and 100 disjoint AmbiK test pairs for the final
+-comparison with paired bootstrap confidence intervals.
++The main command refuses to run after a failed pilot unless deliberately
++overridden with `FORCE_MAIN=1`.
+diff --git a/configs/concept_vectors/extract_clarification_vectors.yaml b/configs/concept_vectors/extract_clarification_vectors.yaml
+index 9c0b4fc..c5bd7be 100644
+--- a/configs/concept_vectors/extract_clarification_vectors.yaml
++++ b/configs/concept_vectors/extract_clarification_vectors.yaml
+@@ -1,4 +1,4 @@
+-experiment_name: extract_clarification_vectors
++experiment_name: extract_clarification_actor_vectors
+ seed: 42
+ 
+ model:
+@@ -11,41 +11,47 @@ generation:
+   do_sample: false
+ 
+ prompting:
++  # Synthetic actor transcripts already contain explicit user/assistant markers.
+   use_chat_template: false
+ 
+ concept_discovery:
+   dataset_path: outputs/synthetic/clarification_counterfactuals.jsonl
+-  output_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
+-  concepts: [ambiguity_state, ask_trajectory, targeted_question, restraint_on_clear]
++  output_path: outputs/concept_vectors/llama32_1b_clarification_actor_vectors.pt
++  concepts: [ask_trajectory, targeted_question]
+   hookpoints:
+     - model.layers.8
+     - model.layers.10
+     - model.layers.12
+     - model.layers.14
+-  # Optional per-hookpoint override, useful for non-Llama architectures.
+   module_paths: {}
+   batch_size: 8
+   max_length: 512
+-
+-  # "recommended" uses last-token pooling for ambiguity_state and assistant-span
+-  # pooling for output-behavior concepts. To reproduce Anthropic's story pooling
+-  # more literally, use pooling: mean_after_token and mean_after_token: 50.
+   pooling: recommended
+   mean_after_token: 50
+-  methods: [paired_difference, difference_in_means, ridge_probe]
++  methods: [paired_difference]
+   pair_id_field: pair_id
+   ridge_l2: 1.0
+-
+-  # Fit on held-out topics and report detector diagnostics on unseen topics.
+   fit_splits: [train]
+   eval_splits: [dev]
+ 
+-  # Prompt and response representations have different pooling distributions,
+-  # so estimate their nuisance subspaces from separate neutral corpora.
++  # v_actor = .5*(targeted - silent guess) + .5*(targeted - generic question)
++  composite_vectors:
++    - name: targeted_clarification
++      method: composite_paired_difference
++      components:
++        - concept: ask_trajectory
++          method: paired_difference
++          weight: 0.5
++        - concept: targeted_question
++          method: paired_difference
++          weight: 0.5
++      diagnostic_concepts:
++        ask_vs_guess: ask_trajectory
++        targeted_vs_generic: targeted_question
++
+   neutral_pca:
+     required: true
+     concepts_by_pooling:
+-      last_nonpad: [neutral_prompt]
+       assistant_mean: [neutral_response]
+     variance_fraction: 0.5
+     max_components: 64
+diff --git a/configs/steering/dense_vector_probe_gated.yaml b/configs/steering/dense_vector_probe_gated.yaml
+index 502c8f6..d34788b 100644
+--- a/configs/steering/dense_vector_probe_gated.yaml
++++ b/configs/steering/dense_vector_probe_gated.yaml
+@@ -39,7 +39,8 @@ steering:
+     enabled: true
+     vector_path: outputs/concept_vectors/llama32_1b_clarification_vectors.pt
+     vector_key: ambiguity_state__ridge_probe__model_layers_10
+-    mode: sigmoid
++    # Primary causal test: truly apply or withhold the actor direction.
++    mode: hard
+     threshold: 0.0
+     # null uses the post-PCA calibrated score scale stored in the vector bundle.
+     temperature: null
+diff --git a/configs/synthetic/generate_clarification_counterfactuals.yaml b/configs/synthetic/generate_clarification_counterfactuals.yaml
+index 0243639..3e36af6 100644
+--- a/configs/synthetic/generate_clarification_counterfactuals.yaml
++++ b/configs/synthetic/generate_clarification_counterfactuals.yaml
+@@ -2,8 +2,6 @@ experiment_name: synthetic_clarification_counterfactuals
+ seed: 42
+ 
+ model:
+-  # Use the same model whose representations will be analyzed for the closest
+-  # analogue to Anthropic's self-generated concept corpus.
+   name: unsloth/Llama-3.2-1B-Instruct
+   torch_dtype: float16
+   device_map: auto
+@@ -11,8 +9,8 @@ model:
+ generation:
+   max_new_tokens: 512
+   do_sample: true
+-  temperature: 0.8
+-  top_p: 0.95
++  temperature: 0.45
++  top_p: 0.9
+ 
+ prompting:
+   use_chat_template: auto
+@@ -20,9 +18,12 @@ prompting:
+ 
+ synthetic_corpus:
+   output_path: outputs/synthetic/clarification_counterfactuals.jsonl
+-  scenarios_per_topic: 12
+-  max_retries: 2
++  # Corrective pilot: 3 accepted scenario slots for each of 20 topics.
++  scenarios_per_topic: 3
++  max_retries: 4
+   strict_validation: true
++  minimum_acceptance_rate: 0.80
++  require_topic_coverage: true
+   splits:
+     train: 0.70
+     dev: 0.15
+diff --git a/scripts/assess_corrective_pilot.py b/scripts/assess_corrective_pilot.py
+new file mode 100644
+index 0000000..39a49ec
+--- /dev/null
++++ b/scripts/assess_corrective_pilot.py
+@@ -0,0 +1,232 @@
++from __future__ import annotations
++
++import argparse
++import json
++from pathlib import Path
++from typing import Any
++
++import pandas as pd
++
++
++def _finite(value: Any) -> float | None:
++    try:
++        number = float(value)
++    except (TypeError, ValueError):
++        return None
++    if pd.isna(number):
++        return None
++    return number
++
++
++def _arm(frame: pd.DataFrame, name: str) -> dict[str, Any]:
++    rows = frame[frame["arm"].astype(str) == name]
++    if len(rows) != 1:
++        raise ValueError(f"Expected one row for arm {name!r}, found {len(rows)}")
++    return rows.iloc[0].to_dict()
++
++
++def _ge(value: float | None, threshold: float) -> bool:
++    return value is not None and value >= threshold
++
++
++def _le(value: float | None, threshold: float) -> bool:
++    return value is not None and value <= threshold
++
++
++def assess(
++    *,
++    corpus_metadata: dict[str, Any],
++    layer_selection: dict[str, Any],
++    summary: pd.DataFrame,
++) -> dict[str, Any]:
++    required_arms = {
++        "baseline",
++        "dense_ungated",
++        "dense_selected",
++        "dense_sign_flip",
++        "random_direction",
++        "sae_baseline",
++    }
++    missing = required_arms - set(summary["arm"].astype(str))
++    if missing:
++        raise ValueError(f"Pilot summary lacks arms: {sorted(missing)}")
++
++    baseline = _arm(summary, "baseline")
++    ungated = _arm(summary, "dense_ungated")
++    gated = _arm(summary, "dense_selected")
++    sign_flip = _arm(summary, "dense_sign_flip")
++    random_control = _arm(summary, "random_direction")
++
++    acceptance_rate = _finite(corpus_metadata.get("acceptance_rate"))
++    accepted_by_topic = dict(corpus_metadata.get("accepted_by_topic", {}))
++    missing_topics = sorted(
++        str(topic) for topic, count in accepted_by_topic.items() if int(count) <= 0
++    )
++    actor_guess = _finite(layer_selection.get("actor_ask_vs_guess_eval_auroc"))
++    actor_generic = _finite(
++        layer_selection.get("actor_targeted_vs_generic_eval_auroc")
++    )
++    gate_auroc = _finite(layer_selection.get("gate_eval_auroc"))
++    protocol_valid = _finite(gated.get("json_protocol_valid_rate"))
++
++    baseline_ask = _finite(baseline.get("asking_rate_ambiguous"))
++    ungated_ask = _finite(ungated.get("asking_rate_ambiguous"))
++    baseline_resolution = _finite(
++        baseline.get("resolved_proxy_any_rate_ambiguous")
++    )
++    ungated_resolution = _finite(
++        ungated.get("resolved_proxy_any_rate_ambiguous")
++    )
++    ungated_overask = _finite(ungated.get("overasking_rate_clear"))
++    gated_overask = _finite(gated.get("overasking_rate_clear"))
++
++    ask_effect = (
++        None if baseline_ask is None or ungated_ask is None
++        else ungated_ask - baseline_ask
++    )
++    resolution_effect = (
++        None
++        if baseline_resolution is None or ungated_resolution is None
++        else ungated_resolution - baseline_resolution
++    )
++    actor_causal_effect = any(
++        value is not None and abs(value) >= 0.05
++        for value in (ask_effect, resolution_effect)
++    )
++    gating_reduces_overask = (
++        ungated_overask is not None
++        and gated_overask is not None
++        and gated_overask <= ungated_overask
++    )
++
++    checks = {
++        "synthetic_acceptance_at_least_0_80": _ge(acceptance_rate, 0.80),
++        "all_topics_covered": not missing_topics,
++        "actor_ask_vs_guess_auroc_at_least_0_75": _ge(actor_guess, 0.75),
++        "actor_targeted_vs_generic_auroc_at_least_0_65": _ge(
++            actor_generic, 0.65
++        ),
++        "ambik_gate_auroc_at_least_0_70": _ge(gate_auroc, 0.70),
++        "dense_selected_protocol_valid_at_least_0_95": _ge(
++            protocol_valid, 0.95
++        ),
++        "ungated_actor_has_detectable_causal_effect": actor_causal_effect,
++        "gating_does_not_increase_clear_overasking": gating_reduces_overask,
++    }
++    failed = [name for name, passed in checks.items() if not passed]
++
++    selected_gap = _finite(gated.get("selective_asking_gap"))
++    sign_gap = _finite(sign_flip.get("selective_asking_gap"))
++    random_gap = _finite(random_control.get("selective_asking_gap"))
++    selected_resolution = _finite(
++        gated.get("resolved_proxy_any_rate_ambiguous")
++    )
++    sign_resolution = _finite(
++        sign_flip.get("resolved_proxy_any_rate_ambiguous")
++    )
++    random_resolution = _finite(
++        random_control.get("resolved_proxy_any_rate_ambiguous")
++    )
++
++    control_evidence = {
++        "selected_selective_gap": selected_gap,
++        "sign_flip_selective_gap": sign_gap,
++        "random_selective_gap": random_gap,
++        "selected_resolution": selected_resolution,
++        "sign_flip_resolution": sign_resolution,
++        "random_resolution": random_resolution,
++        "selected_beats_both_controls_on_gap": (
++            selected_gap is not None
++            and sign_gap is not None
++            and random_gap is not None
++            and selected_gap > max(sign_gap, random_gap)
++        ),
++        "selected_beats_both_controls_on_resolution": (
++            selected_resolution is not None
++            and sign_resolution is not None
++            and random_resolution is not None
++            and selected_resolution > max(sign_resolution, random_resolution)
++        ),
++    }
++
++    recommendation = "GO_TO_MAIN" if not failed else "DO_NOT_RUN_MAIN"
++    return {
++        "recommendation": recommendation,
++        "checks": checks,
++        "failed_checks": failed,
++        "representation_diagnostics": {
++            "synthetic_acceptance_rate": acceptance_rate,
++            "missing_topics": missing_topics,
++            "actor_ask_vs_guess_eval_auroc": actor_guess,
++            "actor_targeted_vs_generic_eval_auroc": actor_generic,
++            "gate_eval_auroc": gate_auroc,
++        },
++        "causal_diagnostics": {
++            "baseline_asking_rate_ambiguous": baseline_ask,
++            "ungated_asking_rate_ambiguous": ungated_ask,
++            "ungated_minus_baseline_asking": ask_effect,
++            "baseline_resolution": baseline_resolution,
++            "ungated_resolution": ungated_resolution,
++            "ungated_minus_baseline_resolution": resolution_effect,
++            "ungated_overasking_rate_clear": ungated_overask,
++            "gated_overasking_rate_clear": gated_overask,
++            "gated_protocol_valid_rate": protocol_valid,
++        },
++        "control_evidence": control_evidence,
++        "note": (
++            "Control superiority is reported but is not a hard automatic gate on "
++            "this 20-pair pilot. Inspect confidence intervals before publication."
++        ),
++    }
++
++
++def parse_args() -> argparse.Namespace:
++    parser = argparse.ArgumentParser()
++    parser.add_argument(
++        "--corpus-metadata",
++        default="outputs/synthetic/clarification_counterfactuals_pilot.metadata.json",
++    )
++    parser.add_argument(
++        "--layer-selection",
++        default="outputs/selection/corrective_pilot_layer_selection.json",
++    )
++    parser.add_argument(
++        "--summary",
++        default="outputs/selective_corrective_pilot/comparison/summary.csv",
++    )
++    parser.add_argument(
++        "--output",
++        default="outputs/selective_corrective_pilot/comparison/pilot_assessment.json",
++    )
++    parser.add_argument("--require-go", action="store_true")
++    return parser.parse_args()
++
++
++def main() -> None:
++    args = parse_args()
++    metadata_path = Path(args.corpus_metadata)
++    selection_path = Path(args.layer_selection)
++    summary_path = Path(args.summary)
++    for path in (metadata_path, selection_path, summary_path):
++        if not path.exists():
++            raise FileNotFoundError(path)
++
++    result = assess(
++        corpus_metadata=json.loads(metadata_path.read_text(encoding="utf-8")),
++        layer_selection=json.loads(selection_path.read_text(encoding="utf-8")),
++        summary=pd.read_csv(summary_path),
++    )
++    output = Path(args.output)
++    output.parent.mkdir(parents=True, exist_ok=True)
++    output.write_text(json.dumps(result, indent=2), encoding="utf-8")
++    print(json.dumps(result, indent=2))
++    print(f"Pilot assessment: {output}")
++    if args.require_go and result["recommendation"] != "GO_TO_MAIN":
++        raise SystemExit(
++            "Corrective pilot did not pass the pre-registered go/no-go checks. "
++            "Do not run the main experiment unless the failure has been reviewed."
++        )
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/build_ambik_probe_corpus.py b/scripts/build_ambik_probe_corpus.py
+new file mode 100644
+index 0000000..22dda5d
+--- /dev/null
++++ b/scripts/build_ambik_probe_corpus.py
+@@ -0,0 +1,99 @@
++from __future__ import annotations
++
++import argparse
++import json
++from pathlib import Path
++from typing import Any
++
++import pandas as pd
++
++from clarifysae_llama.data.ambik_loader import load_ambik_clarification_dataset
++from clarifysae_llama.data.prompting import build_clarification_prompt
++
++
++def rows_from_file(path: Path, *, split: str, max_questions: int) -> list[dict[str, Any]]:
++    frame = load_ambik_clarification_dataset(path)
++    rows: list[dict[str, Any]] = []
++    for _, row in frame.iterrows():
++        variant = str(row.get("pair_variant", "")).strip().lower()
++        if variant not in {"ambiguous", "clear"}:
++            raise ValueError(
++                f"{path} must be a paired AmbiK CSV with pair_variant; got {variant!r}"
++            )
++        source_id = str(row.get("source_id", row["id"]))
++        label = 1 if variant == "ambiguous" else 0
++        rows.append(
++            {
++                "id": f"ambik:{source_id}:{variant}",
++                "pair_id": f"ambik:{source_id}:ambiguity_state",
++                "scenario_id": f"ambik:{source_id}",
++                "split": split,
++                "concept": "ambik_ambiguity_state",
++                "label": label,
++                "variant": f"{variant}_prompt",
++                "text": build_clarification_prompt(
++                    description=str(row["environment_full"]),
++                    task=str(row["ambiguous_task"]),
++                    max_questions=max_questions,
++                ),
++                "recommended_pooling": "last_nonpad",
++                "metadata": {
++                    "source_id": source_id,
++                    "pair_variant": variant,
++                    "ambiguity_type": str(row["ambiguity_type"]),
++                    "source_csv": str(path),
++                },
++            }
++        )
++    return rows
++
++
++def parse_args() -> argparse.Namespace:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--train", required=True)
++    parser.add_argument("--dev", required=True)
++    parser.add_argument("--output", required=True)
++    parser.add_argument("--max-questions", type=int, default=3)
++    return parser.parse_args()
++
++
++def main() -> None:
++    args = parse_args()
++    train_path = Path(args.train)
++    dev_path = Path(args.dev)
++    for path in (train_path, dev_path):
++        if not path.exists():
++            raise FileNotFoundError(path)
++
++    rows = [
++        *rows_from_file(train_path, split="train", max_questions=args.max_questions),
++        *rows_from_file(dev_path, split="dev", max_questions=args.max_questions),
++    ]
++    output = Path(args.output)
++    output.parent.mkdir(parents=True, exist_ok=True)
++    with output.open("w", encoding="utf-8") as handle:
++        for row in rows:
++            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
++
++    counts: dict[str, int] = {}
++    for row in rows:
++        key = f"{row['split']}:{row['variant']}"
++        counts[key] = counts.get(key, 0) + 1
++    metadata = {
++        "output": str(output),
++        "train_csv": str(train_path),
++        "dev_csv": str(dev_path),
++        "rows": len(rows),
++        "counts": counts,
++        "concept": "ambik_ambiguity_state",
++        "prompt_template": "build_clarification_prompt",
++        "max_questions": int(args.max_questions),
++    }
++    output.with_suffix(".metadata.json").write_text(
++        json.dumps(metadata, indent=2), encoding="utf-8"
++    )
++    print(json.dumps(metadata, indent=2))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/build_selective_controls.py b/scripts/build_selective_controls.py
+index e30293a..2b97b5f 100644
+--- a/scripts/build_selective_controls.py
++++ b/scripts/build_selective_controls.py
+@@ -54,6 +54,7 @@ def load_vector_record(bundle: dict[str, Any], key: str) -> dict[str, Any]:
+ def make_orthogonal_random_bundle(
+     *,
+     vector_path: Path,
++    gate_vector_path: Path,
+     ask_key: str,
+     gate_key: str,
+     output_path: Path,
+@@ -63,7 +64,12 @@ def make_orthogonal_random_bundle(
+     if not isinstance(bundle, dict):
+         raise TypeError(f"{vector_path} is not a dense-vector bundle")
+     ask_record = load_vector_record(bundle, ask_key)
+-    gate_record = load_vector_record(bundle, gate_key)
++    gate_bundle = torch.load(
++        gate_vector_path, map_location="cpu", weights_only=False
++    )
++    if not isinstance(gate_bundle, dict):
++        raise TypeError(f"{gate_vector_path} is not a dense-vector bundle")
++    gate_record = load_vector_record(gate_bundle, gate_key)
+     ask = ask_record["vector"].detach().float().flatten()
+     gate = gate_record["vector"].detach().float().flatten()
+     if ask.shape != gate.shape:
+@@ -92,6 +98,7 @@ def make_orthogonal_random_bundle(
+         {
+             "format": "clarifysae_random_direction_control_v1",
+             "source_vector_path": str(vector_path),
++            "source_gate_vector_path": str(gate_vector_path),
+             "seed": int(seed),
+             "vectors": {
+                 key: {
+@@ -131,6 +138,7 @@ def dense_config(
+     strength: float,
+     threshold: float,
+     arm: str,
++    gate_enabled: bool = True,
+ ) -> dict[str, Any]:
+     config = copy.deepcopy(template)
+     config["experiment_name"] = experiment_name
+@@ -143,7 +151,7 @@ def dense_config(
+     steering["hookpoint"] = hookpoint
+     steering["module_path"] = hookpoint
+     steering["strength"] = float(strength)
+-    steering["gate"]["enabled"] = True
++    steering["gate"]["enabled"] = bool(gate_enabled)
+     steering["gate"]["vector_path"] = gate_vector_path
+     steering["gate"]["vector_key"] = gate_vector_key
+     steering["gate"]["threshold"] = float(threshold)
+@@ -151,6 +159,7 @@ def dense_config(
+         "arm": arm,
+         "strength": float(strength),
+         "gate_threshold": float(threshold),
++        "gate_enabled": bool(gate_enabled),
+     }
+     return config
+ 
+@@ -160,6 +169,7 @@ def parse_args() -> argparse.Namespace:
+     parser.add_argument("--prefix", required=True)
+     parser.add_argument("--dataset", required=True)
+     parser.add_argument("--vector-path", required=True)
++    parser.add_argument("--gate-vector-path", default=None)
+     parser.add_argument("--selection", required=True)
+     parser.add_argument("--strength-selection", default=None)
+     parser.add_argument("--gate-selection", default=None)
+@@ -185,8 +195,9 @@ def main() -> None:
+     args = parse_args()
+     dataset = Path(args.dataset)
+     vector_path = Path(args.vector_path)
++    gate_vector_path = Path(args.gate_vector_path or args.vector_path)
+     selection_path = Path(args.selection)
+-    for path in (dataset, vector_path, selection_path):
++    for path in (dataset, vector_path, gate_vector_path, selection_path):
+         if not path.exists():
+             raise FileNotFoundError(path)
+ 
+@@ -204,6 +215,7 @@ def main() -> None:
+     random_path = output_root / "artifacts/random_direction.pt"
+     random_key = make_orthogonal_random_bundle(
+         vector_path=vector_path,
++        gate_vector_path=gate_vector_path,
+         ask_key=ask_key,
+         gate_key=gate_key,
+         output_path=random_path,
+@@ -230,6 +242,9 @@ def main() -> None:
+                 "gate_threshold": config.get("steering", {}).get("gate", {}).get(
+                     "threshold", None
+                 ),
++                "gate_enabled": config.get("steering", {}).get("gate", {}).get(
++                    "enabled", False
++                ),
+             }
+         )
+ 
+@@ -242,6 +257,23 @@ def main() -> None:
+     baseline["run_metadata"] = {"arm": "baseline"}
+     register("baseline", baseline)
+ 
++    ungated = dense_config(
++        dense_template,
++        experiment_name=f"{args.prefix}_dense_ungated",
++        dataset_path=str(dataset),
++        output_root=str(output_root),
++        vector_path=str(vector_path),
++        vector_key=ask_key,
++        gate_vector_path=str(gate_vector_path),
++        gate_vector_key=gate_key,
++        hookpoint=hookpoint,
++        strength=strength,
++        threshold=threshold,
++        arm="dense_ungated",
++        gate_enabled=False,
++    )
++    register("dense_ungated", ungated)
++
+     selected = dense_config(
+         dense_template,
+         experiment_name=f"{args.prefix}_dense_selected",
+@@ -249,7 +281,7 @@ def main() -> None:
+         output_root=str(output_root),
+         vector_path=str(vector_path),
+         vector_key=ask_key,
+-        gate_vector_path=str(vector_path),
++        gate_vector_path=str(gate_vector_path),
+         gate_vector_key=gate_key,
+         hookpoint=hookpoint,
+         strength=strength,
+@@ -265,7 +297,7 @@ def main() -> None:
+         output_root=str(output_root),
+         vector_path=str(vector_path),
+         vector_key=ask_key,
+-        gate_vector_path=str(vector_path),
++        gate_vector_path=str(gate_vector_path),
+         gate_vector_key=gate_key,
+         hookpoint=hookpoint,
+         strength=-strength,
+@@ -281,7 +313,7 @@ def main() -> None:
+         output_root=str(output_root),
+         vector_path=str(random_path),
+         vector_key=random_key,
+-        gate_vector_path=str(vector_path),
++        gate_vector_path=str(gate_vector_path),
+         gate_vector_key=gate_key,
+         hookpoint=hookpoint,
+         strength=strength,
+@@ -330,6 +362,7 @@ def main() -> None:
+         "prefix": args.prefix,
+         "dataset": str(dataset),
+         "vector_path": str(vector_path),
++        "gate_vector_path": str(gate_vector_path),
+         "selection_path": str(selection_path),
+         "hookpoint": hookpoint,
+         "ask_vector_key": ask_key,
+diff --git a/scripts/compare_selective_arms.py b/scripts/compare_selective_arms.py
+index 4bdabd0..074689d 100644
+--- a/scripts/compare_selective_arms.py
++++ b/scripts/compare_selective_arms.py
+@@ -20,6 +20,10 @@ KEY_METRICS = [
+     "avg_num_questions_clear",
+     "ambiguity_decision_accuracy",
+     "json_schema_valid_rate",
++    "json_protocol_valid_rate",
++    "mean_gate_weight",
++    "steering_applied_rate",
++    "mean_steering_delta_norm",
+ ]
+ 
+ 
+@@ -100,9 +104,31 @@ def summarize(frame: pd.DataFrame) -> dict[str, Any]:
+     for column, name in (
+         ("json_exact_valid", "json_exact_valid_rate"),
+         ("json_schema_valid", "json_schema_valid_rate"),
++        ("json_protocol_valid", "json_protocol_valid_rate"),
+         ("json_recoverable_parse", "json_recoverable_parse_rate"),
+     ):
+         result[name] = float(to_bool(frame[column]).mean()) if column in frame.columns else None
++
++    result["mean_gate_raw_score"] = (
++        safe_mean(frame["gate_raw_score"])
++        if "gate_raw_score" in frame.columns else None
++    )
++    result["mean_gate_standardized_score"] = (
++        safe_mean(frame["gate_standardized_score"])
++        if "gate_standardized_score" in frame.columns else None
++    )
++    result["mean_gate_weight"] = (
++        safe_mean(frame["gate_weight"])
++        if "gate_weight" in frame.columns else None
++    )
++    result["steering_applied_rate"] = (
++        float(to_bool(frame["steering_applied"]).mean())
++        if "steering_applied" in frame.columns else None
++    )
++    result["mean_steering_delta_norm"] = (
++        safe_mean(frame["steering_delta_norm"])
++        if "steering_delta_norm" in frame.columns else None
++    )
+     return result
+ 
+ 
+@@ -125,6 +151,18 @@ def category_summaries(frame: pd.DataFrame) -> list[dict[str, Any]]:
+             "json_schema_valid_rate": float(to_bool(group["json_schema_valid"]).mean())
+             if "json_schema_valid" in group.columns
+             else None,
++            "json_protocol_valid_rate": float(to_bool(group["json_protocol_valid"]).mean())
++            if "json_protocol_valid" in group.columns
++            else None,
++            "mean_gate_weight": safe_mean(group["gate_weight"])
++            if "gate_weight" in group.columns
++            else None,
++            "steering_applied_rate": float(to_bool(group["steering_applied"]).mean())
++            if "steering_applied" in group.columns
++            else None,
++            "mean_steering_delta_norm": safe_mean(group["steering_delta_norm"])
++            if "steering_delta_norm" in group.columns
++            else None,
+         }
+         rows.append(row)
+     return rows
+@@ -251,7 +289,10 @@ def main() -> None:
+             "avg_num_questions_ambiguous",
+             "avg_num_questions_clear",
+             "ambiguity_decision_accuracy",
+-            "json_schema_valid_rate",
++            "json_protocol_valid_rate",
++            "mean_gate_weight",
++            "steering_applied_rate",
++            "mean_steering_delta_norm",
+         )
+         if column in overall.columns
+     ]
+diff --git a/scripts/prepare_dense_experiment_configs.py b/scripts/prepare_dense_experiment_configs.py
+index 2fb4d64..0c1f78f 100644
+--- a/scripts/prepare_dense_experiment_configs.py
++++ b/scripts/prepare_dense_experiment_configs.py
+@@ -58,23 +58,71 @@ def write_static(root: Path) -> None:
+     synthetic["experiment_name"] = "synthetic_clarification_counterfactuals_smoke"
+     synthetic["generation"]["max_new_tokens"] = 384
+     synthetic["synthetic_corpus"]["output_path"] = (
+-        "outputs/synthetic/clarification_counterfactuals_smoke.jsonl"
++        "outputs/synthetic/clarification_counterfactuals_smoke_v2.jsonl"
+     )
+     synthetic["synthetic_corpus"]["scenarios_per_topic"] = 1
+-    save_yaml(local / "generate_clarification_counterfactuals_smoke.yaml", synthetic)
++    save_yaml(local / "generate_clarification_counterfactuals_smoke_v2.yaml", synthetic)
++
++    pilot_synthetic = json.loads(json.dumps(synthetic))
++    pilot_synthetic["experiment_name"] = "synthetic_clarification_counterfactuals_pilot"
++    pilot_synthetic["generation"]["max_new_tokens"] = 512
++    pilot_synthetic["synthetic_corpus"]["output_path"] = (
++        "outputs/synthetic/clarification_counterfactuals_pilot.jsonl"
++    )
++    pilot_synthetic["synthetic_corpus"]["scenarios_per_topic"] = 3
++    save_yaml(local / "generate_clarification_counterfactuals_pilot.yaml", pilot_synthetic)
+ 
+     extraction = load_yaml(
+         root / "configs/concept_vectors/extract_clarification_vectors.yaml"
+     )
+-    extraction["experiment_name"] = "extract_clarification_vectors_smoke"
++    extraction["experiment_name"] = "extract_clarification_actor_vectors_smoke_v2"
+     extraction["concept_discovery"]["dataset_path"] = (
+-        "outputs/synthetic/clarification_counterfactuals_smoke.jsonl"
++        "outputs/synthetic/clarification_counterfactuals_smoke_v2.jsonl"
+     )
+     extraction["concept_discovery"]["output_path"] = (
+-        "outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.pt"
++        "outputs/concept_vectors/llama32_1b_clarification_actor_vectors_smoke_v2.pt"
+     )
+     extraction["concept_discovery"]["batch_size"] = 2
+-    save_yaml(local / "extract_clarification_vectors_smoke.yaml", extraction)
++    save_yaml(local / "extract_clarification_actor_vectors_smoke_v2.yaml", extraction)
++
++    pilot_actor = json.loads(json.dumps(extraction))
++    pilot_actor["experiment_name"] = "extract_clarification_actor_vectors_pilot"
++    pilot_actor["concept_discovery"]["dataset_path"] = (
++        "outputs/synthetic/clarification_counterfactuals_pilot.jsonl"
++    )
++    pilot_actor["concept_discovery"]["output_path"] = (
++        "outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt"
++    )
++    pilot_actor["concept_discovery"]["batch_size"] = 8
++    save_yaml(local / "extract_clarification_actor_vectors_pilot.yaml", pilot_actor)
++
++    gate = json.loads(json.dumps(extraction))
++    gate["experiment_name"] = "extract_ambik_ambiguity_probe_pilot"
++    gate["prompting"] = {"use_chat_template": "auto"}
++    gate["concept_discovery"] = {
++        "dataset_path": "outputs/probe_corpus/ambik_probe_train60_dev20.jsonl",
++        "output_path": "outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt",
++        "concepts": ["ambik_ambiguity_state"],
++        "hookpoints": [
++            "model.layers.8",
++            "model.layers.10",
++            "model.layers.12",
++            "model.layers.14",
++        ],
++        "module_paths": {},
++        "batch_size": 8,
++        "max_length": 768,
++        "pooling": "recommended",
++        "mean_after_token": 50,
++        "format_as_generation_prompts": True,
++        "methods": ["ridge_probe"],
++        "pair_id_field": "pair_id",
++        "ridge_l2": 10.0,
++        "fit_splits": ["train"],
++        "eval_splits": ["dev"],
++        "neutral_pca": {"required": False},
++    }
++    save_yaml(local / "extract_ambik_ambiguity_probe_pilot.yaml", gate)
+ 
+ 
+ def write_dense(
+@@ -82,6 +130,7 @@ def write_dense(
+     *,
+     source: str,
+     vector_path: str,
++    gate_vector_path: str | None,
+     selection_path: Path,
+     strength_selection_path: str | None,
+     gate_selection_path: str | None,
+@@ -107,7 +156,7 @@ def write_dense(
+     base["steering"]["hookpoint"] = hookpoint
+     base["steering"]["module_path"] = hookpoint
+     base["steering"]["strength"] = strength
+-    base["steering"]["gate"]["vector_path"] = vector_path
++    base["steering"]["gate"]["vector_path"] = gate_vector_path or vector_path
+     base["steering"]["gate"]["vector_key"] = gate_key
+     base["steering"]["gate"]["threshold"] = threshold
+     base["dataset"]["path"] = calib_dataset
+@@ -167,6 +216,7 @@ def parse_args() -> argparse.Namespace:
+     dense.add_argument("--root", default=".")
+     dense.add_argument("--source", required=True)
+     dense.add_argument("--vector-path", required=True)
++    dense.add_argument("--gate-vector-path", default=None)
+     dense.add_argument("--selection", required=True)
+     dense.add_argument("--strength-selection", default=None)
+     dense.add_argument("--gate-selection", default=None)
+@@ -193,6 +243,7 @@ def main() -> None:
+         root,
+         source=args.source,
+         vector_path=args.vector_path,
++        gate_vector_path=args.gate_vector_path,
+         selection_path=Path(args.selection),
+         strength_selection_path=args.strength_selection,
+         gate_selection_path=args.gate_selection,
+diff --git a/scripts/prepare_dense_experiment_data.py b/scripts/prepare_dense_experiment_data.py
+index de7b925..34e40aa 100644
+--- a/scripts/prepare_dense_experiment_data.py
++++ b/scripts/prepare_dense_experiment_data.py
+@@ -42,6 +42,36 @@ def deterministic_subset(df: pd.DataFrame, *, n: int, seed: int, label: str) ->
+     return df.iloc[chosen].copy().reset_index(drop=True)
+ 
+ 
++
++def deterministic_partition(
++    df: pd.DataFrame,
++    *,
++    sizes: list[int],
++    seed: int,
++    label: str,
++) -> list[pd.DataFrame]:
++    if any(size <= 0 for size in sizes):
++        raise ValueError("partition sizes must all be positive")
++    if sum(sizes) > len(df):
++        raise ValueError(
++            f"partition sizes sum to {sum(sizes)}, but dataset has only {len(df)} rows"
++        )
++    ranked: list[tuple[str, int]] = []
++    for position, (_, row) in enumerate(df.iterrows()):
++        source_id = str(row.get("id", position))
++        digest = hashlib.sha256(
++            f"{seed}:{label}:{source_id}".encode("utf-8")
++        ).hexdigest()
++        ranked.append((digest, position))
++    order = [position for _digest, position in sorted(ranked)]
++    parts: list[pd.DataFrame] = []
++    start = 0
++    for size in sizes:
++        chosen = sorted(order[start:start + size])
++        parts.append(df.iloc[chosen].copy().reset_index(drop=True))
++        start += size
++    return parts
++
+ def validate(df: pd.DataFrame, path: Path) -> pd.DataFrame:
+     missing = REQUIRED_COLUMNS - set(df.columns)
+     if missing:
+@@ -147,6 +177,9 @@ def parse_args() -> argparse.Namespace:
+     parser.add_argument("--seed", type=int, default=42)
+     parser.add_argument("--smoke-pairs", type=int, default=4)
+     parser.add_argument("--selection-pairs", type=int, default=50)
++    parser.add_argument("--probe-train-pairs", type=int, default=60)
++    parser.add_argument("--pilot-select-pairs", type=int, default=20)
++    parser.add_argument("--pilot-eval-pairs", type=int, default=20)
+     parser.add_argument("--heldout-pairs", type=int, default=100)
+     return parser.parse_args()
+ 
+@@ -182,6 +215,17 @@ def main() -> None:
+         ),
+     ]
+ 
++    probe_train, pilot_select, pilot_eval = deterministic_partition(
++        calib_df,
++        sizes=[
++            args.probe_train_pairs,
++            args.pilot_select_pairs,
++            args.pilot_eval_pairs,
++        ],
++        seed=args.seed,
++        label="corrective_pilot_partition",
++    )
++
+     derived_sets = [
+         (
+             deterministic_subset(
+@@ -197,6 +241,21 @@ def main() -> None:
+             calib.with_name("ambik_calib_select50.csv"),
+             calib.with_name("ambik_calib_select50_paired.csv"),
+         ),
++        (
++            probe_train,
++            calib.with_name("ambik_calib_probe_train60.csv"),
++            calib.with_name("ambik_calib_probe_train60_paired.csv"),
++        ),
++        (
++            pilot_select,
++            calib.with_name("ambik_calib_pilot_select20.csv"),
++            calib.with_name("ambik_calib_pilot_select20_paired.csv"),
++        ),
++        (
++            pilot_eval,
++            calib.with_name("ambik_calib_pilot_eval20.csv"),
++            calib.with_name("ambik_calib_pilot_eval20_paired.csv"),
++        ),
+         (
+             deterministic_subset(
+                 test_df, n=args.heldout_pairs, seed=args.seed, label="heldout"
+diff --git a/scripts/run_selective_comparison.sh b/scripts/run_selective_comparison.sh
+index c6d3283..e20e073 100755
+--- a/scripts/run_selective_comparison.sh
++++ b/scripts/run_selective_comparison.sh
+@@ -4,7 +4,7 @@ set -Eeuo pipefail
+ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ cd "$ROOT"
+ 
+-MODE="${1:-smoke}"
++MODE="${1:-pilot}"
+ PYTHON="${PYTHON:-python}"
+ export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
+ export PYTHONUNBUFFERED=1
+@@ -28,6 +28,7 @@ package_results() {
+     -name 'manifest.json' -o \
+     -name 'summary.csv' -o \
+     -name 'summary.json' -o \
++    -name 'pilot_assessment.json' -o \
+     -name 'category_summary.csv' -o \
+     -name 'example_metrics.csv' -o \
+     -name 'aggregate_metrics.csv' -o \
+@@ -36,28 +37,26 @@ package_results() {
+     -name 'random_direction.pt' \
+   \) | sort > "$list"
+ 
+-  local extra=()
+-  if [[ "$mode" == "smoke" ]]; then
++  local extra=(
++    outputs/probe_corpus/ambik_probe_train60_dev20.jsonl
++    outputs/probe_corpus/ambik_probe_train60_dev20.metadata.json
++    outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.csv
++    outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.config.json
++    outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.csv
++    outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.config.json
++    outputs/selection/corrective_pilot_layer_selection.json
++    outputs/selection/corrective_pilot_layer_selection.csv
++    outputs/selection/corrective_pilot_strength_selection.json
++    outputs/selection/corrective_pilot_strength_ranking.csv
++    outputs/selection/corrective_pilot_gate_selection.json
++    outputs/selection/corrective_pilot_gate_ranking.csv
++  )
++  if [[ "$mode" == "pilot" || "$mode" == "smoke" ]]; then
+     extra+=(
+-      outputs/synthetic/clarification_counterfactuals_smoke.metadata.json
+-      outputs/synthetic/clarification_counterfactuals_smoke.failures.json
+-      outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.csv
+-      outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.config.json
+-      outputs/selection/smoke_layer_selection.json
+-      outputs/selection/smoke_layer_selection.csv
+-    )
+-  else
+-    extra+=(
+-      outputs/synthetic/clarification_counterfactuals.metadata.json
+-      outputs/synthetic/clarification_counterfactuals.failures.json
+-      outputs/concept_vectors/llama32_1b_clarification_vectors.csv
+-      outputs/concept_vectors/llama32_1b_clarification_vectors.config.json
+-      outputs/selection/synthetic_layer_selection.json
+-      outputs/selection/synthetic_layer_selection.csv
+-      outputs/selection/selective_strength_selection.json
+-      outputs/selection/selective_strength_ranking.csv
+-      outputs/selection/selective_gate_selection.json
+-      outputs/selection/selective_gate_ranking.csv
++      outputs/synthetic/clarification_counterfactuals_pilot.jsonl
++      outputs/synthetic/clarification_counterfactuals_pilot.metadata.json
++      outputs/synthetic/clarification_counterfactuals_pilot.failures.json
++      outputs/synthetic/clarification_counterfactuals_pilot.complete
+     )
+   fi
+   for path in "${extra[@]}"; do
+@@ -75,110 +74,175 @@ prepare_common() {
+   "$PYTHON" scripts/prepare_dense_experiment_data.py \
+     --smoke-pairs 4 \
+     --selection-pairs 50 \
++    --probe-train-pairs 60 \
++    --pilot-select-pairs 20 \
++    --pilot-eval-pairs 20 \
+     --heldout-pairs 100
+   "$PYTHON" scripts/prepare_dense_experiment_configs.py static --root .
+ }
+ 
+-run_smoke() {
+-  prepare_common
++prepare_corrective_representations() {
++  local synthetic=outputs/synthetic/clarification_counterfactuals_pilot.jsonl
++  local actor=outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt
++  local probe_corpus=outputs/probe_corpus/ambik_probe_train60_dev20.jsonl
++  local gate=outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt
++  local selection=outputs/selection/corrective_pilot_layer_selection.json
+ 
+-  if [[ ! -f outputs/synthetic/clarification_counterfactuals_smoke.jsonl ]]; then
++  if [[ ! -f outputs/synthetic/clarification_counterfactuals_pilot.complete ]]; then
++    rm -f \
++      "$synthetic" \
++      outputs/synthetic/clarification_counterfactuals_pilot.metadata.json \
++      outputs/synthetic/clarification_counterfactuals_pilot.failures.json
+     "$PYTHON" -m clarifysae_llama.runners.generate_synthetic_corpus \
+-      --config configs/local/generate_clarification_counterfactuals_smoke.yaml
+-  fi
+-  if [[ ! -f outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.pt ]]; then
+-    "$PYTHON" -m clarifysae_llama.runners.extract_concept_vectors \
+-      --config configs/local/extract_clarification_vectors_smoke.yaml
++      --config configs/local/generate_clarification_counterfactuals_pilot.yaml
+   fi
+-  "$PYTHON" scripts/select_dense_layer.py \
+-    --diagnostics outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.csv \
+-    --output outputs/selection/smoke_layer_selection.json
+-
+-  local out=outputs/selective_smoke_comparison
+-  "$PYTHON" scripts/build_selective_controls.py \
+-    --prefix smoke \
+-    --dataset data/raw/ambik/ambik_calib_smoke_paired.csv \
+-    --vector-path outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.pt \
+-    --selection outputs/selection/smoke_layer_selection.json \
+-    --strength 0.02 \
+-    --gate-threshold 0.0 \
+-    --output-root "$out"
+-  run_config_manifest "$out/manifest.csv"
+-  "$PYTHON" scripts/compare_selective_arms.py \
+-    --manifest "$out/manifest.csv" \
+-    --output-dir "$out/comparison" \
+-    --bootstrap-samples 200 \
+-    --seed 42
+-  package_results "$out" smoke
+-}
++  require_file "$synthetic"
++  require_file outputs/synthetic/clarification_counterfactuals_pilot.complete
+ 
+-run_main() {
+-  prepare_common
++  if [[ ! -f "$probe_corpus" ]]; then
++    "$PYTHON" scripts/build_ambik_probe_corpus.py \
++      --train data/raw/ambik/ambik_calib_probe_train60_paired.csv \
++      --dev data/raw/ambik/ambik_calib_pilot_select20_paired.csv \
++      --output "$probe_corpus"
++  fi
+ 
+-  if [[ ! -f outputs/synthetic/clarification_counterfactuals.jsonl ]]; then
+-    "$PYTHON" -m clarifysae_llama.runners.generate_synthetic_corpus \
+-      --config configs/synthetic/generate_clarification_counterfactuals.yaml
++  if [[ ! -f "$actor" ]]; then
++    "$PYTHON" -m clarifysae_llama.runners.extract_concept_vectors \
++      --config configs/local/extract_clarification_actor_vectors_pilot.yaml
+   fi
+-  if [[ ! -f outputs/concept_vectors/llama32_1b_clarification_vectors.pt ]]; then
++  if [[ ! -f "$gate" ]]; then
+     "$PYTHON" -m clarifysae_llama.runners.extract_concept_vectors \
+-      --config configs/concept_vectors/extract_clarification_vectors.yaml
++      --config configs/local/extract_ambik_ambiguity_probe_pilot.yaml
+   fi
++
+   "$PYTHON" scripts/select_dense_layer.py \
+-    --diagnostics outputs/concept_vectors/llama32_1b_clarification_vectors.csv \
+-    --output outputs/selection/synthetic_layer_selection.json
++    --actor-diagnostics outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.csv \
++    --gate-diagnostics outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.csv \
++    --output "$selection"
++}
++
++prepare_pilot_selections() {
++  local actor=outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt
++  local gate=outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt
++  local selection=outputs/selection/corrective_pilot_layer_selection.json
+ 
+   "$PYTHON" scripts/prepare_dense_experiment_configs.py dense \
+     --root . \
+-    --source selective \
+-    --vector-path outputs/concept_vectors/llama32_1b_clarification_vectors.pt \
+-    --selection outputs/selection/synthetic_layer_selection.json \
+-    --calib-dataset data/raw/ambik/ambik_calib_select50_paired.csv \
+-    --test-dataset data/raw/ambik/ambik_test_eval100_paired.csv \
+-    --strength-values -0.05 -0.02 0.0 0.02 0.05 \
++    --source corrective_pilot \
++    --vector-path "$actor" \
++    --gate-vector-path "$gate" \
++    --selection "$selection" \
++    --calib-dataset data/raw/ambik/ambik_calib_pilot_select20_paired.csv \
++    --test-dataset data/raw/ambik/ambik_calib_pilot_eval20_paired.csv \
++    --strength-values -0.20 -0.10 -0.05 0.05 0.10 0.20 \
+     --gate-values -1.0 0.0 1.0
+ 
+-  if [[ ! -f outputs/selection/selective_strength_selection.json ]]; then
++  if [[ ! -f outputs/selection/corrective_pilot_strength_selection.json ]]; then
+     "$PYTHON" -m clarifysae_llama.runners.sweep \
+-      --config configs/local/selective_sweep_dense_strengths.yaml
++      --config configs/local/corrective_pilot_sweep_dense_strengths.yaml
+     "$PYTHON" scripts/summarize_selective_clarification.py sweep \
+-      --manifest outputs/sweeps/selective_dense_unconditional_strength_sweep/manifest.csv \
+-      --output-csv outputs/selection/selective_strength_ranking.csv \
+-      --selection-json outputs/selection/selective_strength_selection.json \
++      --manifest outputs/sweeps/corrective_pilot_dense_unconditional_strength_sweep/manifest.csv \
++      --output-csv outputs/selection/corrective_pilot_strength_ranking.csv \
++      --selection-json outputs/selection/corrective_pilot_strength_selection.json \
+       --overask-penalty 0.50 \
+-      --invalid-json-penalty 0.25 \
++      --invalid-json-penalty 0.50 \
+       --exclude-zero-parameter
+   fi
+ 
+   "$PYTHON" scripts/prepare_dense_experiment_configs.py dense \
+     --root . \
+-    --source selective \
+-    --vector-path outputs/concept_vectors/llama32_1b_clarification_vectors.pt \
+-    --selection outputs/selection/synthetic_layer_selection.json \
+-    --strength-selection outputs/selection/selective_strength_selection.json \
+-    --calib-dataset data/raw/ambik/ambik_calib_select50_paired.csv \
+-    --test-dataset data/raw/ambik/ambik_test_eval100_paired.csv \
+-    --strength-values -0.05 -0.02 0.0 0.02 0.05 \
++    --source corrective_pilot \
++    --vector-path "$actor" \
++    --gate-vector-path "$gate" \
++    --selection "$selection" \
++    --strength-selection outputs/selection/corrective_pilot_strength_selection.json \
++    --calib-dataset data/raw/ambik/ambik_calib_pilot_select20_paired.csv \
++    --test-dataset data/raw/ambik/ambik_calib_pilot_eval20_paired.csv \
++    --strength-values -0.20 -0.10 -0.05 0.05 0.10 0.20 \
+     --gate-values -1.0 0.0 1.0
+ 
+-  if [[ ! -f outputs/selection/selective_gate_selection.json ]]; then
++  if [[ ! -f outputs/selection/corrective_pilot_gate_selection.json ]]; then
+     "$PYTHON" -m clarifysae_llama.runners.sweep \
+-      --config configs/local/selective_sweep_gate_thresholds.yaml
++      --config configs/local/corrective_pilot_sweep_gate_thresholds.yaml
+     "$PYTHON" scripts/summarize_selective_clarification.py sweep \
+-      --manifest outputs/sweeps/selective_dense_gate_threshold_sweep/manifest.csv \
+-      --output-csv outputs/selection/selective_gate_ranking.csv \
+-      --selection-json outputs/selection/selective_gate_selection.json \
++      --manifest outputs/sweeps/corrective_pilot_dense_gate_threshold_sweep/manifest.csv \
++      --output-csv outputs/selection/corrective_pilot_gate_ranking.csv \
++      --selection-json outputs/selection/corrective_pilot_gate_selection.json \
+       --overask-penalty 0.50 \
+-      --invalid-json-penalty 0.25
++      --invalid-json-penalty 0.50
++  fi
++}
++
++run_pilot() {
++  prepare_common
++  prepare_corrective_representations
++  prepare_pilot_selections
++
++  local out=outputs/selective_corrective_pilot
++  "$PYTHON" scripts/build_selective_controls.py \
++    --prefix pilot \
++    --dataset data/raw/ambik/ambik_calib_pilot_eval20_paired.csv \
++    --vector-path outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt \
++    --gate-vector-path outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt \
++    --selection outputs/selection/corrective_pilot_layer_selection.json \
++    --strength-selection outputs/selection/corrective_pilot_strength_selection.json \
++    --gate-selection outputs/selection/corrective_pilot_gate_selection.json \
++    --output-root "$out"
++  run_config_manifest "$out/manifest.csv"
++  "$PYTHON" scripts/compare_selective_arms.py \
++    --manifest "$out/manifest.csv" \
++    --output-dir "$out/comparison" \
++    --bootstrap-samples 500 \
++    --seed 42
++  "$PYTHON" scripts/assess_corrective_pilot.py
++  package_results "$out" pilot
++}
++
++run_smoke() {
++  prepare_common
++  prepare_corrective_representations
++  local out=outputs/selective_corrective_smoke
++  "$PYTHON" scripts/build_selective_controls.py \
++    --prefix smoke_v2 \
++    --dataset data/raw/ambik/ambik_calib_smoke_paired.csv \
++    --vector-path outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt \
++    --gate-vector-path outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt \
++    --selection outputs/selection/corrective_pilot_layer_selection.json \
++    --strength 0.10 \
++    --gate-threshold 0.0 \
++    --output-root "$out"
++  run_config_manifest "$out/manifest.csv"
++  "$PYTHON" scripts/compare_selective_arms.py \
++    --manifest "$out/manifest.csv" \
++    --output-dir "$out/comparison" \
++    --bootstrap-samples 100 \
++    --seed 42
++  package_results "$out" smoke
++}
++
++run_main() {
++  prepare_common
++  require_file outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt
++  require_file outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt
++  require_file outputs/selection/corrective_pilot_layer_selection.json
++  require_file outputs/selection/corrective_pilot_strength_selection.json
++  require_file outputs/selection/corrective_pilot_gate_selection.json
++  require_file outputs/selective_corrective_pilot/comparison/pilot_assessment.json
++  if [[ "${FORCE_MAIN:-0}" != "1" ]]; then
++    "$PYTHON" scripts/assess_corrective_pilot.py --require-go
++  else
++    echo "WARNING: FORCE_MAIN=1 bypasses the corrective-pilot go/no-go check." >&2
+   fi
+ 
+   local out=outputs/selective_main_comparison
+   "$PYTHON" scripts/build_selective_controls.py \
+     --prefix main \
+     --dataset data/raw/ambik/ambik_test_eval100_paired.csv \
+-    --vector-path outputs/concept_vectors/llama32_1b_clarification_vectors.pt \
+-    --selection outputs/selection/synthetic_layer_selection.json \
+-    --strength-selection outputs/selection/selective_strength_selection.json \
+-    --gate-selection outputs/selection/selective_gate_selection.json \
++    --vector-path outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt \
++    --gate-vector-path outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt \
++    --selection outputs/selection/corrective_pilot_layer_selection.json \
++    --strength-selection outputs/selection/corrective_pilot_strength_selection.json \
++    --gate-selection outputs/selection/corrective_pilot_gate_selection.json \
+     --output-root "$out"
+   run_config_manifest "$out/manifest.csv"
+   "$PYTHON" scripts/compare_selective_arms.py \
+@@ -191,9 +255,10 @@ run_main() {
+ 
+ case "$MODE" in
+   smoke) run_smoke ;;
++  pilot) run_pilot ;;
+   main) run_main ;;
+   *)
+-    echo "Usage: $0 {smoke|main}" >&2
++    echo "Usage: $0 {smoke|pilot|main}" >&2
+     exit 2
+     ;;
+ esac
+diff --git a/scripts/select_dense_layer.py b/scripts/select_dense_layer.py
+index 880c58f..431d70b 100644
+--- a/scripts/select_dense_layer.py
++++ b/scripts/select_dense_layer.py
+@@ -17,7 +17,13 @@ def parse_layer(hookpoint: str) -> int:
+ 
+ def parse_args() -> argparse.Namespace:
+     parser = argparse.ArgumentParser()
+-    parser.add_argument("--diagnostics", required=True)
++    parser.add_argument(
++        "--diagnostics",
++        default=None,
++        help="Backward-compatible single diagnostics CSV.",
++    )
++    parser.add_argument("--actor-diagnostics", default=None)
++    parser.add_argument("--gate-diagnostics", default=None)
+     parser.add_argument("--output", required=True)
+     parser.add_argument(
+         "--ranking-output",
+@@ -27,31 +33,71 @@ def parse_args() -> argparse.Namespace:
+     return parser.parse_args()
+ 
+ 
+-def main() -> None:
+-    args = parse_args()
+-    diagnostics_path = Path(args.diagnostics)
+-    df = pd.read_csv(diagnostics_path)
++def _load(path: str | None, label: str) -> tuple[Path, pd.DataFrame]:
++    if not path:
++        raise ValueError(f"Missing --{label}-diagnostics")
++    resolved = Path(path)
++    frame = pd.read_csv(resolved)
+     required = {"concept", "method", "hookpoint", "vector_key", "eval_auroc"}
+-    missing = required - set(df.columns)
++    missing = required - set(frame.columns)
+     if missing:
+         raise ValueError(
+-            f"{diagnostics_path} lacks required diagnostic columns: {sorted(missing)}"
++            f"{resolved} lacks required diagnostic columns: {sorted(missing)}"
+         )
++    return resolved, frame
++
+ 
+-    ask = df[
+-        (df["concept"] == "ask_trajectory")
+-        & (df["method"] == "paired_difference")
+-    ][["hookpoint", "vector_key", "eval_auroc", "eval_balanced_accuracy"]].rename(
++def main() -> None:
++    args = parse_args()
++    actor_path = args.actor_diagnostics or args.diagnostics
++    gate_path = args.gate_diagnostics or args.diagnostics
++    actor_diagnostics_path, actor_df = _load(actor_path, "actor")
++    gate_diagnostics_path, gate_df = _load(gate_path, "gate")
++
++    actor = actor_df[
++        (actor_df["concept"] == "targeted_clarification")
++        & (actor_df["method"] == "composite_paired_difference")
++    ].copy()
++    if actor.empty:
++        raise ValueError(
++            "Actor diagnostics contain no targeted_clarification/"
++            "composite_paired_difference rows."
++        )
++    required_actor = {
++        "eval_auroc_ask_vs_guess",
++        "eval_auroc_targeted_vs_generic",
++    }
++    missing_actor = required_actor - set(actor.columns)
++    if missing_actor:
++        raise ValueError(
++            f"{actor_diagnostics_path} lacks composite actor diagnostics: "
++            f"{sorted(missing_actor)}"
++        )
++    actor = actor[
++        [
++            "hookpoint",
++            "vector_key",
++            "eval_auroc",
++            "eval_auroc_ask_vs_guess",
++            "eval_auroc_targeted_vs_generic",
++        ]
++    ].rename(
+         columns={
+             "vector_key": "ask_vector_key",
+-            "eval_auroc": "ask_eval_auroc",
+-            "eval_balanced_accuracy": "ask_eval_balanced_accuracy",
++            "eval_auroc": "actor_min_eval_auroc",
++            "eval_auroc_ask_vs_guess": "actor_ask_vs_guess_eval_auroc",
++            "eval_auroc_targeted_vs_generic": (
++                "actor_targeted_vs_generic_eval_auroc"
++            ),
+         }
+     )
+-    gate = df[
+-        (df["concept"] == "ambiguity_state")
+-        & (df["method"] == "ridge_probe")
+-    ][["hookpoint", "vector_key", "eval_auroc", "eval_balanced_accuracy"]].rename(
++
++    gate = gate_df[
++        (gate_df["concept"] == "ambik_ambiguity_state")
++        & (gate_df["method"] == "ridge_probe")
++    ][
++        ["hookpoint", "vector_key", "eval_auroc", "eval_balanced_accuracy"]
++    ].rename(
+         columns={
+             "vector_key": "gate_vector_key",
+             "eval_auroc": "gate_eval_auroc",
+@@ -59,21 +105,32 @@ def main() -> None:
+         }
+     )
+ 
+-    merged = ask.merge(gate, on="hookpoint", how="inner")
++    merged = actor.merge(gate, on="hookpoint", how="inner")
++    merged = merged.dropna(
++        subset=[
++            "actor_ask_vs_guess_eval_auroc",
++            "actor_targeted_vs_generic_eval_auroc",
++            "gate_eval_auroc",
++        ]
++    ).copy()
+     if merged.empty:
+         raise ValueError(
+-            "No layer contains both ask_trajectory/paired_difference and "
+-            "ambiguity_state/ridge_probe diagnostics."
++            "No layer has complete actor and AmbiK gate held-out diagnostics."
+         )
+-    merged = merged.dropna(subset=["ask_eval_auroc", "gate_eval_auroc"]).copy()
+-    if merged.empty:
+-        raise ValueError("All joint layer diagnostics have missing eval AUROC values.")
+ 
+     merged["joint_min_auroc"] = merged[
+-        ["ask_eval_auroc", "gate_eval_auroc"]
++        [
++            "actor_ask_vs_guess_eval_auroc",
++            "actor_targeted_vs_generic_eval_auroc",
++            "gate_eval_auroc",
++        ]
+     ].min(axis=1)
+     merged["joint_mean_auroc"] = merged[
+-        ["ask_eval_auroc", "gate_eval_auroc"]
++        [
++            "actor_ask_vs_guess_eval_auroc",
++            "actor_targeted_vs_generic_eval_auroc",
++            "gate_eval_auroc",
++        ]
+     ].mean(axis=1)
+     merged["layer"] = merged["hookpoint"].map(parse_layer)
+     merged = merged.sort_values(
+@@ -85,10 +142,12 @@ def main() -> None:
+     selected.update(
+         {
+             "selection_rule": (
+-                "maximize the weaker held-out AUROC of the ambiguity probe and "
+-                "ask trajectory; break ties by mean AUROC"
++                "maximize the weakest held-out AUROC among targeted-vs-guess, "
++                "targeted-vs-generic, and real-AmbiK ambiguity detection; "
++                "break ties by their mean"
+             ),
+-            "diagnostics_path": str(diagnostics_path),
++            "actor_diagnostics_path": str(actor_diagnostics_path),
++            "gate_diagnostics_path": str(gate_diagnostics_path),
+             "module_path": selected["hookpoint"],
+         }
+     )
+diff --git a/scripts/summarize_selective_clarification.py b/scripts/summarize_selective_clarification.py
+index e92f1db..c900315 100644
+--- a/scripts/summarize_selective_clarification.py
++++ b/scripts/summarize_selective_clarification.py
+@@ -61,6 +61,10 @@ def summarize_metrics(path: Path) -> dict[str, Any]:
+         result["json_schema_valid_rate"] = float(_to_bool(df["json_schema_valid"]).mean())
+     else:
+         result["json_schema_valid_rate"] = 1.0
++    if "json_protocol_valid" in df.columns:
++        result["json_protocol_valid_rate"] = float(_to_bool(df["json_protocol_valid"]).mean())
++    else:
++        result["json_protocol_valid_rate"] = result["json_schema_valid_rate"]
+     return result
+ 
+ 
+@@ -120,7 +124,7 @@ def main() -> None:
+         row.update(summary)
+         resolved = float(summary.get("resolved_proxy_any_ambiguous") or 0.0)
+         overask = float(summary.get("overasking_rate_clear") or 0.0)
+-        valid = float(summary.get("json_schema_valid_rate") or 0.0)
++        valid = float(summary.get("json_protocol_valid_rate") or 0.0)
+         row["selection_utility"] = (
+             resolved
+             - float(args.overask_penalty) * overask
+@@ -151,7 +155,7 @@ def main() -> None:
+             "selection_rule": (
+                 "resolved_proxy_any_ambiguous - overask_penalty * "
+                 "overasking_rate_clear - invalid_json_penalty * "
+-                "(1 - json_schema_valid_rate)"
++                "(1 - json_protocol_valid_rate)"
+             ),
+             "overask_penalty": float(args.overask_penalty),
+             "invalid_json_penalty": float(args.invalid_json_penalty),
+diff --git a/src/clarifysae_llama/backends/steered_hf_backend.py b/src/clarifysae_llama/backends/steered_hf_backend.py
+index b71ae82..de6fb01 100644
+--- a/src/clarifysae_llama/backends/steered_hf_backend.py
++++ b/src/clarifysae_llama/backends/steered_hf_backend.py
+@@ -135,3 +135,9 @@ class SteeredHFCausalBackend(HFCausalBackend):
+             return super().generate_batch(prompts)
+         finally:
+             self.steering.detach()
++
++    def get_last_steering_diagnostics(self) -> list[dict]:
++        diagnostics = getattr(self.steering, "diagnostics", None)
++        if diagnostics is None:
++            return []
++        return list(diagnostics())
+diff --git a/src/clarifysae_llama/eval/metrics.py b/src/clarifysae_llama/eval/metrics.py
+index de5596c..e6a35ff 100644
+--- a/src/clarifysae_llama/eval/metrics.py
++++ b/src/clarifysae_llama/eval/metrics.py
+@@ -202,6 +202,9 @@ def aggregate_metrics(
+     json_schema_valid_rate = None
+     if 'json_schema_valid' in example_metrics.columns:
+         json_schema_valid_rate = float(sum(1 for row in rows if bool(row.get('json_schema_valid'))) / total_examples)
++    json_protocol_valid_rate = None
++    if 'json_protocol_valid' in example_metrics.columns:
++        json_protocol_valid_rate = float(sum(1 for row in rows if bool(row.get('json_protocol_valid'))) / total_examples)
+     json_recoverable_parse_rate = None
+     if 'json_recoverable_parse' in example_metrics.columns:
+         json_recoverable_parse_rate = float(sum(1 for row in rows if bool(row.get('json_recoverable_parse'))) / total_examples)
+@@ -234,6 +237,8 @@ def aggregate_metrics(
+         overall['json_exact_valid_rate'] = json_exact_valid_rate
+     if json_schema_valid_rate is not None:
+         overall['json_schema_valid_rate'] = json_schema_valid_rate
++    if json_protocol_valid_rate is not None:
++        overall['json_protocol_valid_rate'] = json_protocol_valid_rate
+     if json_recoverable_parse_rate is not None:
+         overall['json_recoverable_parse_rate'] = json_recoverable_parse_rate
+ 
+@@ -294,6 +299,8 @@ def aggregate_metrics(
+             category_row['json_exact_valid_rate'] = float(sum(1 for row in cat_rows if bool(row.get('json_exact_valid'))) / len(cat_rows))
+         if 'json_schema_valid' in example_metrics.columns:
+             category_row['json_schema_valid_rate'] = float(sum(1 for row in cat_rows if bool(row.get('json_schema_valid'))) / len(cat_rows))
++        if 'json_protocol_valid' in example_metrics.columns:
++            category_row['json_protocol_valid_rate'] = float(sum(1 for row in cat_rows if bool(row.get('json_protocol_valid'))) / len(cat_rows))
+         if 'json_recoverable_parse' in example_metrics.columns:
+             category_row['json_recoverable_parse_rate'] = float(sum(1 for row in cat_rows if bool(row.get('json_recoverable_parse'))) / len(cat_rows))
+ 
+@@ -328,6 +335,8 @@ def aggregate_metrics(
+             overall[f'json_exact_valid_rate__{category}'] = category_row['json_exact_valid_rate']
+         if 'json_schema_valid_rate' in category_row:
+             overall[f'json_schema_valid_rate__{category}'] = category_row['json_schema_valid_rate']
++        if 'json_protocol_valid_rate' in category_row:
++            overall[f'json_protocol_valid_rate__{category}'] = category_row['json_protocol_valid_rate']
+         if 'json_recoverable_parse_rate' in category_row:
+             overall[f'json_recoverable_parse_rate__{category}'] = category_row['json_recoverable_parse_rate']
+         if enable_nli:
+diff --git a/src/clarifysae_llama/runners/extract_concept_vectors.py b/src/clarifysae_llama/runners/extract_concept_vectors.py
+index 36062cc..f550215 100644
+--- a/src/clarifysae_llama/runners/extract_concept_vectors.py
++++ b/src/clarifysae_llama/runners/extract_concept_vectors.py
+@@ -281,13 +281,21 @@ def run(config: dict[str, Any]) -> None:
+     max_length = int(cfg.get("max_length", 512))
+     default_pooling = str(cfg.get("pooling", "recommended"))
+     mean_after_token = int(cfg.get("mean_after_token", 50))
++    format_as_generation_prompts = bool(
++        cfg.get("format_as_generation_prompts", False)
++    )
+ 
+     activation_rows: dict[str, list[torch.Tensor]] = {hp: [] for hp in hookpoints}
+     model_device = backend._model_input_device()
+     with MultiHookCapture(model, hookpoints, module_paths) as capture:
+         for start in tqdm(range(0, len(rows), batch_size), desc="Extracting residual activations"):
+             batch_rows = rows[start:start + batch_size]
+-            texts = [str(row["text"]) for row in batch_rows]
++            raw_texts = [str(row["text"]) for row in batch_rows]
++            texts = (
++                backend._format_prompts(raw_texts)
++                if format_as_generation_prompts
++                else raw_texts
++            )
+             tokenized = tokenizer(
+                 texts,
+                 return_tensors="pt",
+@@ -338,6 +346,7 @@ def run(config: dict[str, Any]) -> None:
+     max_pcs = pca_cfg.get("max_components")
+     require_neutral = bool(pca_cfg.get("required", False))
+     methods = list(cfg.get("methods", ["paired_difference", "difference_in_means", "ridge_probe"]))
++    composite_specs = list(cfg.get("composite_vectors", []))
+     fit_splits = _normalise_string_set(cfg.get("fit_splits")) or None
+     eval_splits = _normalise_string_set(cfg.get("eval_splits")) or None
+     pair_field = str(cfg.get("pair_id_field", "pair_id"))
+@@ -478,6 +487,142 @@ def run(config: dict[str, Any]) -> None:
+                 row_diag.update({f"eval_{k}": v for k, v in eval_diag.items()})
+                 diagnostics.append(row_diag)
+ 
++        for spec in composite_specs:
++            if not isinstance(spec, dict):
++                raise TypeError("Each composite_vectors entry must be a mapping")
++            name = str(spec.get("name", "")).strip()
++            method_name = str(
++                spec.get("method", "composite_paired_difference")
++            ).strip().lower().replace("-", "_")
++            components = list(spec.get("components", []))
++            if not name or not components:
++                raise ValueError(
++                    "Composite vectors require a non-empty name and components"
++                )
++
++            composite = torch.zeros_like(all_acts[0], dtype=torch.float32)
++            component_records: list[dict[str, Any]] = []
++            for component in components:
++                concept_name = str(component["concept"])
++                component_method = str(
++                    component.get("method", "paired_difference")
++                ).strip().lower().replace("-", "_")
++                weight = float(component.get("weight", 1.0))
++                component_key = (
++                    f"{_safe_key(concept_name)}__{component_method}__"
++                    f"{_safe_key(hp)}"
++                )
++                if component_key not in vectors:
++                    raise KeyError(
++                        f"Composite {name!r} requires missing vector "
++                        f"{component_key!r}"
++                    )
++                component_vector = vectors[component_key]["vector"].float()
++                composite = composite + weight * component_vector
++                component_records.append({
++                    "vector_key": component_key,
++                    "weight": weight,
++                })
++
++            raw_composite = composite.clone()
++            composite = composite / composite.norm().clamp_min(1e-8)
++            key = f"{_safe_key(name)}__{method_name}__{_safe_key(hp)}"
++
++            fit_contrast_diags: dict[str, dict[str, float]] = {}
++            eval_contrast_diags: dict[str, dict[str, float]] = {}
++            diagnostic_concepts = dict(spec.get("diagnostic_concepts", {}))
++            for contrast_name, contrast_concept in diagnostic_concepts.items():
++                concept_idx = [
++                    i for i, row in enumerate(rows)
++                    if str(row["concept"]) == str(contrast_concept)
++                ]
++                concept_rows_all = [rows[i] for i in concept_idx]
++                concept_acts_all = all_acts[concept_idx]
++                fit_local_idx = [
++                    i for i, row in enumerate(concept_rows_all)
++                    if not fit_splits or _row_split(row) in fit_splits
++                ]
++                _fit_rows, fit_pos, fit_neg = _class_matrices(
++                    concept_rows_all,
++                    concept_acts_all,
++                    allowed_indices=fit_local_idx,
++                )
++                fit_contrast_diags[str(contrast_name)] = (
++                    binary_score_diagnostics(composite, 0.0, fit_pos, fit_neg)
++                )
++
++                eval_local_idx = [
++                    i for i, row in enumerate(concept_rows_all)
++                    if eval_splits and _row_split(row) in eval_splits
++                ]
++                if eval_local_idx:
++                    _eval_rows, eval_pos, eval_neg = _class_matrices(
++                        concept_rows_all,
++                        concept_acts_all,
++                        allowed_indices=eval_local_idx,
++                    )
++                    if eval_pos.shape[0] and eval_neg.shape[0]:
++                        eval_contrast_diags[str(contrast_name)] = (
++                            binary_score_diagnostics(
++                                composite, 0.0, eval_pos, eval_neg
++                            )
++                        )
++
++            fit_aurocs = [
++                float(diag["auroc"]) for diag in fit_contrast_diags.values()
++                if "auroc" in diag
++            ]
++            eval_aurocs = [
++                float(diag["auroc"]) for diag in eval_contrast_diags.values()
++                if "auroc" in diag
++            ]
++            fit_diag = {"auroc": min(fit_aurocs)} if fit_aurocs else {}
++            eval_diag = {"auroc": min(eval_aurocs)} if eval_aurocs else {}
++
++            vectors[key] = {
++                "vector": composite.cpu(),
++                "raw_vector": raw_composite.cpu(),
++                "concept": name,
++                "method": method_name,
++                "hookpoint": hp,
++                "pooling": "assistant_mean",
++                "components": component_records,
++                "diagnostic_concepts": diagnostic_concepts,
++                "average_residual_norm": average_residual_norm,
++                "fit_diagnostics": fit_diag,
++                "eval_diagnostics": eval_diag,
++                "fit_contrast_diagnostics": fit_contrast_diags,
++                "eval_contrast_diagnostics": eval_contrast_diags,
++            }
++            row_diag = {
++                "vector_key": key,
++                "concept": name,
++                "method": method_name,
++                "hookpoint": hp,
++                "pooling": "assistant_mean",
++                "n_positive": None,
++                "n_negative": None,
++                "vector_norm": float(composite.norm()),
++                "raw_clean_cosine": cosine_similarity(
++                    raw_composite, composite
++                ),
++                "neutral_pcs_removed": None,
++                "average_residual_norm": average_residual_norm,
++                "fit_auroc": fit_diag.get("auroc"),
++                "eval_auroc": eval_diag.get("auroc"),
++            }
++            for contrast_name, diag in fit_contrast_diags.items():
++                for metric_name, value in diag.items():
++                    row_diag[
++                        f"fit_{metric_name}_{_safe_key(contrast_name)}"
++                    ] = value
++            for contrast_name, diag in eval_contrast_diags.items():
++                for metric_name, value in diag.items():
++                    row_diag[
++                        f"eval_{metric_name}_{_safe_key(contrast_name)}"
++                    ] = value
++            diagnostics.append(row_diag)
++
+     output_path = Path(cfg.get("output_path", "outputs/concept_vectors/clarification_vectors.pt"))
+     ensure_dir(output_path.parent)
+     torch.save({
+@@ -488,6 +633,7 @@ def run(config: dict[str, Any]) -> None:
+         "metadata": {
+             "pooling": default_pooling,
+             "mean_after_token": mean_after_token,
++            "format_as_generation_prompts": format_as_generation_prompts,
+             "fit_splits": sorted(fit_splits or []),
+             "eval_splits": sorted(eval_splits or []),
+             "neutral_concepts_by_pooling": {
+diff --git a/src/clarifysae_llama/runners/generate_synthetic_corpus.py b/src/clarifysae_llama/runners/generate_synthetic_corpus.py
+index b89585e..6fac5bc 100644
+--- a/src/clarifysae_llama/runners/generate_synthetic_corpus.py
++++ b/src/clarifysae_llama/runners/generate_synthetic_corpus.py
+@@ -69,10 +69,19 @@ def _validate_scenario(obj: dict[str, Any], *, strict: bool = True) -> dict[str,
+         "targeted_question", "direct_response", "guessing_response", "generic_question",
+         "unnecessary_question",
+     ]
+-    missing = [key for key in required if not str(obj.get(key, "")).strip()]
++    missing = [key for key in required if key not in obj or obj.get(key) is None]
+     if missing:
+         raise ValueError(f"Generated scenario is missing fields: {missing}")
+-    scenario = {key: str(obj[key]).strip() for key in required}
++    wrong_types = [key for key in required if not isinstance(obj.get(key), str)]
++    if wrong_types:
++        raise ValueError(
++            "Every scenario field must be a JSON string; wrong types for: "
++            f"{wrong_types}"
++        )
++    empty = [key for key in required if not obj[key].strip()]
++    if empty:
++        raise ValueError(f"Generated scenario has empty fields: {empty}")
++    scenario = {key: obj[key].strip() for key in required}
+ 
+     joined = " ".join(scenario.values()).lower()
+     forbidden = sorted(term for term in FORBIDDEN_META_TERMS if term in joined)
+@@ -116,25 +125,53 @@ def _validate_scenario(obj: dict[str, Any], *, strict: bool = True) -> dict[str,
+ def _writer_prompt(topic: str, scenario_index: int) -> str:
+     return f"""Create one realistic matched counterfactual scenario about {topic} for mechanistic-interpretability research.
+ 
+-The goal is to separate these concepts: (1) recognizing that a required variable is not specified, (2) choosing to ask rather than guess, and (3) asking for the specific variable rather than merely producing an interrogative sentence.
+-
+-Return exactly one JSON object with these string fields:
+-- context: all relevant environment/background facts
+-- ambiguous_instruction: an instruction with exactly one consequential unspecified slot and at least two plausible values
+-- clear_instruction: the same instruction with that slot explicitly filled; change as little wording as possible
+-- missing_slot: a short noun phrase naming the information that is needed
+-- targeted_question: one concise, actionable question that asks only for that slot and uses at least one important word from missing_slot
+-- direct_response: an appropriate direct response/action to the clear instruction
+-- guessing_response: a fluent response to the ambiguous instruction that silently selects one plausible value (hard negative)
+-- generic_question: an interrogative response to the ambiguous instruction that does not identify or name the missing slot (hard negative)
+-- unnecessary_question: a plausible but needless question asked after the clear instruction (hard negative)
+-
+-Constraints:
+-- Do not use meta-words such as “ambiguous”, “underspecified”, “clarification”, “clarify”, or “missing information” inside the scenario.
+-- Make the question content semantically necessary, not merely stylistic.
+-- The clear and unclear instructions must be a minimal pair.
+-- Keep every field short enough that the whole JSON is under 350 words.
+-- Scenario id seed: {scenario_index}.
++Return exactly one JSON object and nothing else. Every value must be a JSON string, never a list, object, boolean, or number. Use exactly these keys:
++- context
++- ambiguous_instruction
++- clear_instruction
++- missing_slot
++- targeted_question
++- direct_response
++- guessing_response
++- generic_question
++- unnecessary_question
++
++Semantic requirements:
++1. ambiguous_instruction leaves exactly one consequential choice unspecified, with at least two plausible values.
++2. clear_instruction is the same instruction with only that choice filled.
++3. missing_slot is a short noun phrase naming the choice.
++4. targeted_question asks only for that choice and repeats at least one important content word from missing_slot.
++5. guessing_response answers the ambiguous instruction by silently choosing one plausible value and must not be a question.
++6. generic_question is a question such as asking for more details, but it must not contain any content word from missing_slot.
++7. direct_response appropriately answers the clear instruction and must not be a question.
++8. unnecessary_question is a plausible but needless question after the clear instruction.
++
++Formatting requirements:
++- targeted_question, generic_question, and unnecessary_question must end with ?.
++- Do not use the words ambiguous, ambiguity, underspecified, under-specified, clarification, clarify, or missing information in any value.
++- Keep the ambiguous/clear instructions as a minimal pair.
++- Keep the complete JSON under 350 words.
++- Do not wrap the JSON in markdown or add commentary.
++- Scenario seed: {scenario_index}.
++"""
++
++
++def _repair_prompt(
++    original_prompt: str,
++    previous_output: str,
++    error: Exception,
++    attempt: int,
++) -> str:
++    previous = previous_output.strip()[:2400]
++    return f"""{original_prompt}
++
++Your previous attempt failed validation. Repair it and return a completely corrected JSON object only.
++Validation error: {type(error).__name__}: {error}
++Repair attempt: {attempt}
++Previous output:
++{previous}
++
++Do not explain the repair. Return only the corrected JSON object with all nine values as JSON strings.
+ """
+ 
+ 
+@@ -241,6 +278,8 @@ def run(config: dict[str, Any]) -> None:
+     corpus_cfg = config.get("synthetic_corpus", {})
+     output_path = Path(corpus_cfg.get("output_path", "outputs/synthetic/clarification_counterfactuals.jsonl"))
+     ensure_dir(output_path.parent)
++    completion_path = output_path.with_suffix(".complete")
++    completion_path.unlink(missing_ok=True)
+ 
+     topics = [str(x) for x in corpus_cfg.get("topics", DEFAULT_TOPICS)]
+     n_per_topic = int(corpus_cfg.get("scenarios_per_topic", 12))
+@@ -260,13 +299,20 @@ def run(config: dict[str, Any]) -> None:
+     rows: list[dict[str, Any]] = []
+     failures: list[dict[str, Any]] = []
+     accepted_scenarios = 0
++    accepted_by_topic = {topic: 0 for topic in topics}
++    total_generation_calls = 0
++    scenario_slots = len(topics) * n_per_topic
+     for topic_idx, topic in enumerate(tqdm(topics, desc="Topics")):
+         for local_idx in range(n_per_topic):
+             scenario_index = topic_idx * n_per_topic + local_idx
+-            prompt = _writer_prompt(topic, scenario_index)
++            original_prompt = _writer_prompt(topic, scenario_index)
++            prompt = original_prompt
+             last_error: Exception | None = None
++            attempts: list[dict[str, Any]] = []
+             for attempt in range(max_retries + 1):
++                raw = ""
+                 try:
++                    total_generation_calls += 1
+                     raw = backend.generate(prompt)
+                     scenario = _validate_scenario(
+                         _extract_json_object(raw), strict=strict_validation
+@@ -276,16 +322,26 @@ def run(config: dict[str, Any]) -> None:
+                         scenario_id, topic, scenario, split=split_map[topic]
+                     ))
+                     accepted_scenarios += 1
++                    accepted_by_topic[topic] += 1
+                     last_error = None
+                     break
+                 except Exception as exc:  # preserve failed generations for audit
+                     last_error = exc
++                    attempts.append({
++                        "attempt": attempt,
++                        "error": f"{type(exc).__name__}: {exc}",
++                        "raw_output": raw[:3000],
++                    })
++                    prompt = _repair_prompt(
++                        original_prompt, raw, exc, attempt + 1
++                    )
+             if last_error is not None:
+                 failures.append({
+                     "topic": topic,
+                     "scenario_index": scenario_index,
+                     "split": split_map[topic],
+                     "error": repr(last_error),
++                    "attempts": attempts,
+                 })
+ 
+     with output_path.open("w", encoding="utf-8") as f:
+@@ -297,23 +353,63 @@ def run(config: dict[str, Any]) -> None:
+         split: sum(1 for row in rows if row["split"] == split)
+         for split in ("train", "dev", "test")
+     }
++    acceptance_rate = (
++        float(accepted_scenarios / scenario_slots) if scenario_slots else 0.0
++    )
+     metadata = {
+         "rows": len(rows),
+         "rows_per_scenario": 10,
++        "scenario_slots": scenario_slots,
+         "scenarios": accepted_scenarios,
++        "acceptance_rate": acceptance_rate,
+         "failures": len(failures),
++        "generation_calls": total_generation_calls,
+         "topics": topics,
++        "accepted_by_topic": accepted_by_topic,
+         "topic_splits": split_map,
+         "row_split_counts": split_counts,
+         "scenarios_per_topic": n_per_topic,
+         "writer_model": config["model"]["name"],
+         "strict_validation": strict_validation,
+     }
+-    output_path.with_suffix(".metadata.json").write_text(
++    metadata_path = output_path.with_suffix(".metadata.json")
++    metadata_path.write_text(
+         json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
+     )
+     print(json.dumps(metadata, indent=2))
+ 
++    minimum_acceptance_rate = float(
++        corpus_cfg.get("minimum_acceptance_rate", 0.0)
++    )
++    require_topic_coverage = bool(
++        corpus_cfg.get("require_topic_coverage", False)
++    )
++    missing_topics = [
++        topic for topic, count in accepted_by_topic.items() if count == 0
++    ]
++    problems: list[str] = []
++    if acceptance_rate < minimum_acceptance_rate:
++        problems.append(
++            f"acceptance_rate={acceptance_rate:.3f} < "
++            f"minimum_acceptance_rate={minimum_acceptance_rate:.3f}"
++        )
++    if require_topic_coverage and missing_topics:
++        problems.append(f"topics with zero accepted scenarios: {missing_topics}")
++    if problems:
++        raise RuntimeError(
++            "Synthetic corpus failed its quality gate: " + "; ".join(problems)
++            + f". Inspect {failure_path} and {metadata_path}."
++        )
++    completion_path.write_text(
++        json.dumps({
++            "output": str(output_path),
++            "metadata": str(metadata_path),
++            "acceptance_rate": acceptance_rate,
++            "scenarios": accepted_scenarios,
++        }, indent=2),
++        encoding="utf-8",
++    )
++
+ 
+ def parse_args() -> argparse.Namespace:
+     parser = argparse.ArgumentParser()
+diff --git a/src/clarifysae_llama/runners/run_eval.py b/src/clarifysae_llama/runners/run_eval.py
+index 9205505..3168080 100644
+--- a/src/clarifysae_llama/runners/run_eval.py
++++ b/src/clarifysae_llama/runners/run_eval.py
+@@ -152,8 +152,16 @@ def _run_generation_stage(
+         chunk = prompt_rows[start:start + batch_size]
+         prompts = [row[prompt_key] for row in chunk]
+         predictions = backend.generate_batch(prompts)
+-        for row, raw_output in zip(chunk, predictions):
++        diagnostics_getter = getattr(
++            backend, "get_last_steering_diagnostics", None
++        )
++        diagnostics = (
++            list(diagnostics_getter()) if diagnostics_getter is not None else []
++        )
++        for index, (row, raw_output) in enumerate(zip(chunk, predictions)):
+             row[output_key] = raw_output
++            if index < len(diagnostics):
++                row["steering_diagnostics"] = diagnostics[index]
+ 
+ 
+ def _coerce_predicted_ambiguous(value: Any) -> bool | None:
+@@ -188,7 +196,13 @@ def _compact_prediction_row(row: dict[str, Any], *, enable_nli: bool) -> dict[st
+         'json_parsed_output',
+         'json_exact_valid',
+         'json_schema_valid',
++        'json_protocol_valid',
+         'json_recoverable_parse',
++        'gate_raw_score',
++        'gate_standardized_score',
++        'gate_weight',
++        'steering_delta_norm',
++        'steering_applied',
+     ]
+     if enable_nli:
+         keep.extend([
+@@ -232,7 +246,13 @@ def _select_example_metric_columns(raw_df: pd.DataFrame, *, enable_nli: bool) ->
+         'resolved_proxy_any',
+         'json_exact_valid',
+         'json_schema_valid',
++        'json_protocol_valid',
+         'json_recoverable_parse',
++        'gate_raw_score',
++        'gate_standardized_score',
++        'gate_weight',
++        'steering_delta_norm',
++        'steering_applied',
+     ]
+     if enable_nli:
+         columns.extend([
+@@ -267,7 +287,9 @@ def _finalize_prediction_rows(prompt_rows: list[dict[str, Any]], eval_settings:
+ 
+         predicted_ambiguous = _coerce_predicted_ambiguous(parsed.get('ambiguous')) if parsed else None
+         model_questions = normalize_questions(parsed.get('question', parsed.get('questions', []))) if parsed else []
+-        json_metrics = assess_json_output(raw_output)
++        json_metrics = assess_json_output(
++            raw_output, max_questions=eval_settings['max_questions']
++        )
+ 
+         prediction_row.update({
+             'prompt': row['prompt'],
+@@ -276,8 +298,20 @@ def _finalize_prediction_rows(prompt_rows: list[dict[str, Any]], eval_settings:
+             'json_parsed_output': json_metrics['json_parsed_output'],
+             'json_exact_valid': json_metrics['json_exact_valid'],
+             'json_schema_valid': json_metrics['json_schema_valid'],
++            'json_protocol_valid': json_metrics['json_protocol_valid'],
+             'json_recoverable_parse': json_metrics['json_recoverable_parse'],
+         })
++        steering_diagnostics = row.get('steering_diagnostics')
++        if isinstance(steering_diagnostics, dict):
++            for key in (
++                'gate_raw_score',
++                'gate_standardized_score',
++                'gate_weight',
++                'steering_delta_norm',
++                'steering_applied',
++            ):
++                if key in steering_diagnostics:
++                    prediction_row[key] = steering_diagnostics[key]
+ 
+         metrics = compute_example_metrics(
+             ambiguity_type=row['ambiguity_type'],
+diff --git a/src/clarifysae_llama/steering/dense_vector_steerer.py b/src/clarifysae_llama/steering/dense_vector_steerer.py
+index f315088..7851bcc 100644
+--- a/src/clarifysae_llama/steering/dense_vector_steerer.py
++++ b/src/clarifysae_llama/steering/dense_vector_steerer.py
+@@ -66,6 +66,9 @@ class DenseVectorSteerer:
+         self.handle = None
+         self._cached_gate_weights: torch.Tensor | None = None
+         self.last_gate_scores: torch.Tensor | None = None
++        self.last_gate_standardized_scores: torch.Tensor | None = None
++        self.last_gate_weights: torch.Tensor | None = None
++        self.last_steering_delta_norms: torch.Tensor | None = None
+ 
+         module_path = resolve_module_path(config.hookpoint, config.module_path)
+         self.target_module = get_submodule_by_path(self.model, module_path)
+@@ -114,6 +117,9 @@ class DenseVectorSteerer:
+     def reset(self) -> None:
+         self._cached_gate_weights = None
+         self.last_gate_scores = None
++        self.last_gate_standardized_scores = None
++        self.last_gate_weights = None
++        self.last_steering_delta_norms = None
+ 
+     def _selected_position_mask(self, hidden: torch.Tensor) -> torch.Tensor:
+         batch_size, seq_len, _ = hidden.shape
+@@ -136,7 +142,11 @@ class DenseVectorSteerer:
+     def _compute_gate_weights(self, hidden: torch.Tensor) -> torch.Tensor:
+         batch_size, _seq_len, d_model = hidden.shape
+         if not self.config.gate_enabled:
+-            return torch.ones(batch_size, device=hidden.device, dtype=hidden.dtype)
++            weights = torch.ones(
++                batch_size, device=hidden.device, dtype=hidden.dtype
++            )
++            self.last_gate_weights = weights.detach().float().cpu()
++            return weights
+ 
+         # Compute exactly once per reset. Recomputing whenever seq_len > 1 makes
+         # no-cache generation silently change the gate after every token.
+@@ -153,6 +163,9 @@ class DenseVectorSteerer:
+             # units. This matches the sweep configuration and makes thresholds
+             # comparable across layers instead of treating +/-1 as raw logits.
+             normalized_scores = scores / max(float(self.gate_temperature), 1e-6)
++            self.last_gate_standardized_scores = (
++                normalized_scores.detach().float().cpu()
++            )
+             centered = normalized_scores - float(self.config.gate_threshold)
+             mode = self.config.gate_mode.strip().lower().replace("-", "_")
+             if mode == "hard":
+@@ -164,6 +177,7 @@ class DenseVectorSteerer:
+             else:
+                 raise ValueError(f"Unsupported gate_mode: {self.config.gate_mode}")
+             self._cached_gate_weights = weights.detach()
++            self.last_gate_weights = weights.detach().float().cpu()
+ 
+         cached = self._cached_gate_weights.to(device=hidden.device, dtype=hidden.dtype)
+         if cached.shape[0] == batch_size:
+@@ -233,11 +247,74 @@ class DenseVectorSteerer:
+             norms = delta.norm(dim=-1, keepdim=True).clamp_min(1e-8)
+             delta = delta * torch.clamp(cap / norms, max=1.0)
+ 
++        delta_norms = torch.zeros(
++            hidden.shape[0], device=hidden.device, dtype=torch.float32
++        )
++        for row_idx in range(hidden.shape[0]):
++            row_mask = batch_idx == row_idx
++            if bool(row_mask.any()):
++                delta_norms[row_idx] = delta[row_mask].float().norm(
++                    dim=-1
++                ).max()
++        current = delta_norms.detach().cpu()
++        if self.last_steering_delta_norms is None:
++            self.last_steering_delta_norms = current
++        elif self.last_steering_delta_norms.shape == current.shape:
++            self.last_steering_delta_norms = torch.maximum(
++                self.last_steering_delta_norms, current
++            )
++
+         updated[batch_idx, seq_idx, :] = base + delta
+         if isinstance(output, tuple):
+             return (updated,) + output[1:]
+         return updated
+ 
++    def diagnostics(self) -> list[dict[str, Any]]:
++        candidates = [
++            self.last_gate_scores,
++            self.last_gate_standardized_scores,
++            self.last_gate_weights,
++            self.last_steering_delta_norms,
++        ]
++        size = max(
++            (int(value.numel()) for value in candidates if value is not None),
++            default=0,
++        )
++        rows: list[dict[str, Any]] = []
++        for index in range(size):
++            raw = (
++                float(self.last_gate_scores[index])
++                if self.last_gate_scores is not None
++                and index < self.last_gate_scores.numel()
++                else None
++            )
++            standardized = (
++                float(self.last_gate_standardized_scores[index])
++                if self.last_gate_standardized_scores is not None
++                and index < self.last_gate_standardized_scores.numel()
++                else None
++            )
++            weight = (
++                float(self.last_gate_weights[index])
++                if self.last_gate_weights is not None
++                and index < self.last_gate_weights.numel()
++                else (1.0 if not self.config.gate_enabled else None)
++            )
++            delta_norm = (
++                float(self.last_steering_delta_norms[index])
++                if self.last_steering_delta_norms is not None
++                and index < self.last_steering_delta_norms.numel()
++                else 0.0
++            )
++            rows.append({
++                "gate_raw_score": raw,
++                "gate_standardized_score": standardized,
++                "gate_weight": weight,
++                "steering_delta_norm": delta_norm,
++                "steering_applied": bool(delta_norm > 1e-12),
++            })
++        return rows
++
+ 
+ class MultiLayerDenseVectorSteerer:
+     """Attach one dense vector per layer, as in multi-layer activation steering.
+@@ -272,3 +349,22 @@ class MultiLayerDenseVectorSteerer:
+     def reset(self) -> None:
+         for steerer in self.steerers:
+             steerer.reset()
++
++    def diagnostics(self) -> list[dict[str, Any]]:
++        child_rows = [steerer.diagnostics() for steerer in self.steerers]
++        size = max((len(rows) for rows in child_rows), default=0)
++        merged: list[dict[str, Any]] = []
++        for index in range(size):
++            available = [rows[index] for rows in child_rows if index < len(rows)]
++            merged.append({
++                "gate_raw_score": available[0].get("gate_raw_score") if available else None,
++                "gate_standardized_score": available[0].get("gate_standardized_score") if available else None,
++                "gate_weight": available[0].get("gate_weight") if available else None,
++                "steering_delta_norm": float(sum(
++                    float(row.get("steering_delta_norm") or 0.0) for row in available
++                )),
++                "steering_applied": any(
++                    bool(row.get("steering_applied")) for row in available
++                ),
++            })
++        return merged
+diff --git a/src/clarifysae_llama/utils/parsing.py b/src/clarifysae_llama/utils/parsing.py
+index 1a2796f..e0bd940 100644
+--- a/src/clarifysae_llama/utils/parsing.py
++++ b/src/clarifysae_llama/utils/parsing.py
+@@ -241,14 +241,36 @@ def parse_model_json_strict(raw_output: str) -> dict[str, Any] | None:
+ 
+ 
+ 
+-def assess_json_output(raw_output: str) -> dict[str, Any]:
++def _protocol_valid(parsed: dict[str, Any] | None, *, max_questions: int) -> bool:
++    if parsed is None:
++        return False
++    ambiguous = parsed.get('ambiguous')
++    questions = parsed.get('question')
++    if not isinstance(ambiguous, bool) or not isinstance(questions, list):
++        return False
++    if any(not isinstance(question, str) or not question.strip() for question in questions):
++        return False
++    if ambiguous:
++        return 1 <= len(questions) <= int(max_questions)
++    return len(questions) == 0
++
++
++def assess_json_output(
++    raw_output: str,
++    *,
++    max_questions: int = 3,
++) -> dict[str, Any]:
+     strict = parse_model_json_strict(raw_output)
+     recovered = parse_model_json(raw_output)
++    parsed = strict if strict is not None else recovered
+     return {
+         'json_exact_valid': strict is not None,
+         'json_schema_valid': recovered is not None,
++        'json_protocol_valid': _protocol_valid(
++            parsed, max_questions=max_questions
++        ),
+         'json_recoverable_parse': recovered is not None and strict is None,
+-        'json_parsed_output': strict if strict is not None else recovered,
++        'json_parsed_output': parsed,
+     }
+ 
+ 
+diff --git a/tests/test_corrective_pilot_assessment.py b/tests/test_corrective_pilot_assessment.py
+new file mode 100644
+index 0000000..9053790
+--- /dev/null
++++ b/tests/test_corrective_pilot_assessment.py
+@@ -0,0 +1,121 @@
++from __future__ import annotations
++
++import importlib.util
++from pathlib import Path
++
++import pandas as pd
++
++
++def _load_assess():
++    path = Path(__file__).parents[1] / "scripts/assess_corrective_pilot.py"
++    spec = importlib.util.spec_from_file_location("assess_corrective_pilot", path)
++    assert spec is not None and spec.loader is not None
++    module = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    return module.assess
++
++
++assess = _load_assess()
++
++
++def test_corrective_pilot_assessment_go() -> None:
++    rows = [
++        {
++            "arm": "baseline",
++            "asking_rate_ambiguous": 0.50,
++            "overasking_rate_clear": 0.50,
++            "resolved_proxy_any_rate_ambiguous": 0.20,
++            "selective_asking_gap": 0.00,
++            "json_protocol_valid_rate": 1.00,
++        },
++        {
++            "arm": "dense_ungated",
++            "asking_rate_ambiguous": 0.60,
++            "overasking_rate_clear": 0.70,
++            "resolved_proxy_any_rate_ambiguous": 0.30,
++            "selective_asking_gap": -0.10,
++            "json_protocol_valid_rate": 1.00,
++        },
++        {
++            "arm": "dense_selected",
++            "asking_rate_ambiguous": 0.60,
++            "overasking_rate_clear": 0.40,
++            "resolved_proxy_any_rate_ambiguous": 0.30,
++            "selective_asking_gap": 0.20,
++            "json_protocol_valid_rate": 1.00,
++        },
++        {
++            "arm": "dense_sign_flip",
++            "asking_rate_ambiguous": 0.40,
++            "overasking_rate_clear": 0.50,
++            "resolved_proxy_any_rate_ambiguous": 0.10,
++            "selective_asking_gap": -0.10,
++            "json_protocol_valid_rate": 1.00,
++        },
++        {
++            "arm": "random_direction",
++            "asking_rate_ambiguous": 0.50,
++            "overasking_rate_clear": 0.50,
++            "resolved_proxy_any_rate_ambiguous": 0.20,
++            "selective_asking_gap": 0.00,
++            "json_protocol_valid_rate": 1.00,
++        },
++        {
++            "arm": "sae_baseline",
++            "asking_rate_ambiguous": 0.80,
++            "overasking_rate_clear": 0.90,
++            "resolved_proxy_any_rate_ambiguous": 0.10,
++            "selective_asking_gap": -0.10,
++            "json_protocol_valid_rate": 0.90,
++        },
++    ]
++    result = assess(
++        corpus_metadata={
++            "acceptance_rate": 0.90,
++            "accepted_by_topic": {"one": 2, "two": 1},
++        },
++        layer_selection={
++            "actor_ask_vs_guess_eval_auroc": 0.80,
++            "actor_targeted_vs_generic_eval_auroc": 0.70,
++            "gate_eval_auroc": 0.75,
++        },
++        summary=pd.DataFrame(rows),
++    )
++    assert result["recommendation"] == "GO_TO_MAIN"
++    assert not result["failed_checks"]
++
++
++def test_corrective_pilot_assessment_blocks_weak_gate() -> None:
++    rows = []
++    for arm in (
++        "baseline",
++        "dense_ungated",
++        "dense_selected",
++        "dense_sign_flip",
++        "random_direction",
++        "sae_baseline",
++    ):
++        rows.append(
++            {
++                "arm": arm,
++                "asking_rate_ambiguous": 0.50,
++                "overasking_rate_clear": 0.50,
++                "resolved_proxy_any_rate_ambiguous": 0.20,
++                "selective_asking_gap": 0.00,
++                "json_protocol_valid_rate": 1.00,
++            }
++        )
++    result = assess(
++        corpus_metadata={
++            "acceptance_rate": 0.90,
++            "accepted_by_topic": {"one": 1},
++        },
++        layer_selection={
++            "actor_ask_vs_guess_eval_auroc": 0.80,
++            "actor_targeted_vs_generic_eval_auroc": 0.70,
++            "gate_eval_auroc": 0.55,
++        },
++        summary=pd.DataFrame(rows),
++    )
++    assert result["recommendation"] == "DO_NOT_RUN_MAIN"
++    assert not result["checks"]["ambik_gate_auroc_at_least_0_70"]
+diff --git a/tests/test_corrective_pilot_data.py b/tests/test_corrective_pilot_data.py
+new file mode 100644
+index 0000000..d42aef4
+--- /dev/null
++++ b/tests/test_corrective_pilot_data.py
+@@ -0,0 +1,29 @@
++from __future__ import annotations
++
++import importlib.util
++from pathlib import Path
++
++import pandas as pd
++
++
++def load_script_module(name: str, filename: str):
++    path = Path(__file__).resolve().parents[1] / "scripts" / filename
++    spec = importlib.util.spec_from_file_location(name, path)
++    assert spec is not None and spec.loader is not None
++    module = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    return module
++
++
++def test_corrective_partition_is_disjoint():
++    module = load_script_module("prepare_dense_data", "prepare_dense_experiment_data.py")
++    frame = pd.DataFrame({"id": list(range(100)), "value": list(range(100))})
++    train, select, evaluate = module.deterministic_partition(
++        frame, sizes=[60, 20, 20], seed=42, label="pilot"
++    )
++    ids = [set(part["id"].tolist()) for part in (train, select, evaluate)]
++    assert [len(part) for part in ids] == [60, 20, 20]
++    assert ids[0].isdisjoint(ids[1])
++    assert ids[0].isdisjoint(ids[2])
++    assert ids[1].isdisjoint(ids[2])
++    assert len(set.union(*ids)) == 100
+diff --git a/tests/test_dense_vector_steerer.py b/tests/test_dense_vector_steerer.py
+index a45c256..70a52e8 100644
+--- a/tests/test_dense_vector_steerer.py
++++ b/tests/test_dense_vector_steerer.py
+@@ -152,3 +152,31 @@ def test_gate_threshold_uses_standardized_score_units(tmp_path):
+     finally:
+         steerer.detach()
+     assert torch.allclose(y[0, -1], torch.tensor([1.0, 2.5]), atol=1e-6)
++
++
++def test_dense_diagnostics_report_gate_and_delta(tmp_path):
++    model = DummyModel()
++    path = _bundle(tmp_path)
++    steerer = DenseVectorSteerer(
++        model, torch.device("cpu"), torch.float32,
++        DenseVectorConfig(
++            vector_path=path, vector_key="steer", hookpoint="model.layers.0",
++            strength=0.2, scale_mode="recorded_residual_norm_fraction",
++            apply_to="last_position", steer_generated_tokens_only=False,
++            gate_enabled=True, gate_vector_key="gate", gate_mode="sigmoid",
++            gate_temperature=None,
++        ),
++    )
++    x = torch.tensor([[[0.0, 0.0], [0.0, 2.5]]])
++    steerer.attach()
++    try:
++        _ = model(x)
++    finally:
++        steerer.detach()
++    rows = steerer.diagnostics()
++    assert len(rows) == 1
++    assert rows[0]["gate_raw_score"] == 2.5
++    assert rows[0]["gate_standardized_score"] == 1.0
++    assert 0.73 < rows[0]["gate_weight"] < 0.74
++    assert rows[0]["steering_delta_norm"] > 1.4
++    assert rows[0]["steering_applied"] is True
+diff --git a/tests/test_json_protocol.py b/tests/test_json_protocol.py
+new file mode 100644
+index 0000000..e37f885
+--- /dev/null
++++ b/tests/test_json_protocol.py
+@@ -0,0 +1,17 @@
++from clarifysae_llama.utils.parsing import assess_json_output
++
++
++def test_protocol_rejects_too_many_questions():
++    raw = '{"ambiguous": true, "question": ["q1", "q2", "q3", "q4"]}'
++    result = assess_json_output(raw, max_questions=3)
++    assert result["json_schema_valid"] is True
++    assert result["json_protocol_valid"] is False
++
++
++def test_protocol_requires_questions_only_when_ambiguous():
++    clear_with_question = '{"ambiguous": false, "question": ["Why?"]}'
++    ambiguous_without_question = '{"ambiguous": true, "question": []}'
++    valid_clear = '{"ambiguous": false, "question": []}'
++    assert assess_json_output(clear_with_question)["json_protocol_valid"] is False
++    assert assess_json_output(ambiguous_without_question)["json_protocol_valid"] is False
++    assert assess_json_output(valid_clear)["json_protocol_valid"] is True
+diff --git a/tests/test_selective_comparison.py b/tests/test_selective_comparison.py
+index f951d18..da64063 100644
+--- a/tests/test_selective_comparison.py
++++ b/tests/test_selective_comparison.py
+@@ -58,6 +58,7 @@ def test_random_control_is_orthogonal_to_ask_and_gate(tmp_path):
+     )
+     key = module.make_orthogonal_random_bundle(
+         vector_path=source,
++        gate_vector_path=source,
+         ask_key="ask",
+         gate_key="gate",
+         output_path=output,

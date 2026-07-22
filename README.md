@@ -202,21 +202,44 @@ To run the dense clarification study without manually editing YAML files, follow
 bash scripts/run_dense_clarification_pipeline.sh help
 ```
 
-## Recommended selective dense-versus-SAE comparison
+## Recommended corrective pilot: dense clarification versus SAE steering
 
-The repository-compatible comparison added for the clarification study runs the
-same held-out matched prompts under five arms: unsteered baseline, selected
-probe-gated dense direction, sign-flipped dense direction, orthogonal random
-direction with the same gate, and the frozen Llama-1B SAE baseline
-(layer 12, feature 6230, strength -5).
+The current staged comparison first runs a **corrective pilot**, not the final
+100-pair test. It separates the two functions needed for selective
+clarification:
+
+- a synthetic **targeted-clarification actor direction**, combining
+  targeted-question versus silent-guess and targeted-question versus generic-
+  question contrasts;
+- a real-AmbiK **ambiguity probe**, trained on 60 matched ambiguous/clear pairs
+  and validated on 20 disjoint calibration pairs.
+
+The pilot evaluates 20 further disjoint calibration pairs under six arms:
+unsteered baseline, ungated dense actor, probe-gated dense actor, sign-flipped
+actor, orthogonal random direction with the same gate, and the frozen Llama-1B
+SAE baseline (layer 12, feature 6230, strength -5). It also logs per-example
+gate scores, gate weights, applied steering norms, and strict JSON-protocol
+validity.
 
 ```bash
-bash scripts/run_selective_comparison.sh smoke
+bash scripts/run_selective_comparison.sh pilot
+```
+
+The runner generates 60 synthetic scenario slots, requires at least 80%
+acceptance and coverage of all 20 topics, selects a layer using held-out actor
+and gate AUROCs, sweeps a small diagnostic strength/gate grid, and writes an
+automatic go/no-go report to:
+
+```text
+outputs/selective_corrective_pilot/comparison/pilot_assessment.json
+```
+
+Only after reviewing a `GO_TO_MAIN` pilot should the held-out 100-pair test be
+run:
+
+```bash
 bash scripts/run_selective_comparison.sh main
 ```
 
-The smoke command verifies the complete generation, activation extraction,
-layer selection, dense steering, random control, SAE steering, evaluation, and
-summary path on four pairs. The main command uses 50 calibration pairs for the
-small strength/gate selection and 100 disjoint AmbiK test pairs for the final
-comparison with paired bootstrap confidence intervals.
+The main command refuses to run after a failed pilot unless deliberately
+overridden with `FORCE_MAIN=1`.

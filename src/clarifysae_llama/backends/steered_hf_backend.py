@@ -135,3 +135,9 @@ class SteeredHFCausalBackend(HFCausalBackend):
             return super().generate_batch(prompts)
         finally:
             self.steering.detach()
+
+    def get_last_steering_diagnostics(self) -> list[dict]:
+        diagnostics = getattr(self.steering, "diagnostics", None)
+        if diagnostics is None:
+            return []
+        return list(diagnostics())

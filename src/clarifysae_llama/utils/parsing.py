@@ -241,14 +241,36 @@ def parse_model_json_strict(raw_output: str) -> dict[str, Any] | None:
 
 
 
-def assess_json_output(raw_output: str) -> dict[str, Any]:
+def _protocol_valid(parsed: dict[str, Any] | None, *, max_questions: int) -> bool:
+    if parsed is None:
+        return False
+    ambiguous = parsed.get('ambiguous')
+    questions = parsed.get('question')
+    if not isinstance(ambiguous, bool) or not isinstance(questions, list):
+        return False
+    if any(not isinstance(question, str) or not question.strip() for question in questions):
+        return False
+    if ambiguous:
+        return 1 <= len(questions) <= int(max_questions)
+    return len(questions) == 0
+
+
+def assess_json_output(
+    raw_output: str,
+    *,
+    max_questions: int = 3,
+) -> dict[str, Any]:
     strict = parse_model_json_strict(raw_output)
     recovered = parse_model_json(raw_output)
+    parsed = strict if strict is not None else recovered
     return {
         'json_exact_valid': strict is not None,
         'json_schema_valid': recovered is not None,
+        'json_protocol_valid': _protocol_valid(
+            parsed, max_questions=max_questions
+        ),
         'json_recoverable_parse': recovered is not None and strict is None,
-        'json_parsed_output': strict if strict is not None else recovered,
+        'json_parsed_output': parsed,
     }
 
 

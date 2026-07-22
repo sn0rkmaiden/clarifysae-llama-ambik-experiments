@@ -58,23 +58,71 @@ def write_static(root: Path) -> None:
     synthetic["experiment_name"] = "synthetic_clarification_counterfactuals_smoke"
     synthetic["generation"]["max_new_tokens"] = 384
     synthetic["synthetic_corpus"]["output_path"] = (
-        "outputs/synthetic/clarification_counterfactuals_smoke.jsonl"
+        "outputs/synthetic/clarification_counterfactuals_smoke_v2.jsonl"
     )
     synthetic["synthetic_corpus"]["scenarios_per_topic"] = 1
-    save_yaml(local / "generate_clarification_counterfactuals_smoke.yaml", synthetic)
+    save_yaml(local / "generate_clarification_counterfactuals_smoke_v2.yaml", synthetic)
+
+    pilot_synthetic = json.loads(json.dumps(synthetic))
+    pilot_synthetic["experiment_name"] = "synthetic_clarification_counterfactuals_pilot"
+    pilot_synthetic["generation"]["max_new_tokens"] = 512
+    pilot_synthetic["synthetic_corpus"]["output_path"] = (
+        "outputs/synthetic/clarification_counterfactuals_pilot.jsonl"
+    )
+    pilot_synthetic["synthetic_corpus"]["scenarios_per_topic"] = 3
+    save_yaml(local / "generate_clarification_counterfactuals_pilot.yaml", pilot_synthetic)
 
     extraction = load_yaml(
         root / "configs/concept_vectors/extract_clarification_vectors.yaml"
     )
-    extraction["experiment_name"] = "extract_clarification_vectors_smoke"
+    extraction["experiment_name"] = "extract_clarification_actor_vectors_smoke_v2"
     extraction["concept_discovery"]["dataset_path"] = (
-        "outputs/synthetic/clarification_counterfactuals_smoke.jsonl"
+        "outputs/synthetic/clarification_counterfactuals_smoke_v2.jsonl"
     )
     extraction["concept_discovery"]["output_path"] = (
-        "outputs/concept_vectors/llama32_1b_clarification_vectors_smoke.pt"
+        "outputs/concept_vectors/llama32_1b_clarification_actor_vectors_smoke_v2.pt"
     )
     extraction["concept_discovery"]["batch_size"] = 2
-    save_yaml(local / "extract_clarification_vectors_smoke.yaml", extraction)
+    save_yaml(local / "extract_clarification_actor_vectors_smoke_v2.yaml", extraction)
+
+    pilot_actor = json.loads(json.dumps(extraction))
+    pilot_actor["experiment_name"] = "extract_clarification_actor_vectors_pilot"
+    pilot_actor["concept_discovery"]["dataset_path"] = (
+        "outputs/synthetic/clarification_counterfactuals_pilot.jsonl"
+    )
+    pilot_actor["concept_discovery"]["output_path"] = (
+        "outputs/concept_vectors/llama32_1b_clarification_actor_vectors_pilot.pt"
+    )
+    pilot_actor["concept_discovery"]["batch_size"] = 8
+    save_yaml(local / "extract_clarification_actor_vectors_pilot.yaml", pilot_actor)
+
+    gate = json.loads(json.dumps(extraction))
+    gate["experiment_name"] = "extract_ambik_ambiguity_probe_pilot"
+    gate["prompting"] = {"use_chat_template": "auto"}
+    gate["concept_discovery"] = {
+        "dataset_path": "outputs/probe_corpus/ambik_probe_train60_dev20.jsonl",
+        "output_path": "outputs/concept_vectors/llama32_1b_ambik_ambiguity_probe_pilot.pt",
+        "concepts": ["ambik_ambiguity_state"],
+        "hookpoints": [
+            "model.layers.8",
+            "model.layers.10",
+            "model.layers.12",
+            "model.layers.14",
+        ],
+        "module_paths": {},
+        "batch_size": 8,
+        "max_length": 768,
+        "pooling": "recommended",
+        "mean_after_token": 50,
+        "format_as_generation_prompts": True,
+        "methods": ["ridge_probe"],
+        "pair_id_field": "pair_id",
+        "ridge_l2": 10.0,
+        "fit_splits": ["train"],
+        "eval_splits": ["dev"],
+        "neutral_pca": {"required": False},
+    }
+    save_yaml(local / "extract_ambik_ambiguity_probe_pilot.yaml", gate)
 
 
 def write_dense(
@@ -82,6 +130,7 @@ def write_dense(
     *,
     source: str,
     vector_path: str,
+    gate_vector_path: str | None,
     selection_path: Path,
     strength_selection_path: str | None,
     gate_selection_path: str | None,
@@ -107,7 +156,7 @@ def write_dense(
     base["steering"]["hookpoint"] = hookpoint
     base["steering"]["module_path"] = hookpoint
     base["steering"]["strength"] = strength
-    base["steering"]["gate"]["vector_path"] = vector_path
+    base["steering"]["gate"]["vector_path"] = gate_vector_path or vector_path
     base["steering"]["gate"]["vector_key"] = gate_key
     base["steering"]["gate"]["threshold"] = threshold
     base["dataset"]["path"] = calib_dataset
@@ -167,6 +216,7 @@ def parse_args() -> argparse.Namespace:
     dense.add_argument("--root", default=".")
     dense.add_argument("--source", required=True)
     dense.add_argument("--vector-path", required=True)
+    dense.add_argument("--gate-vector-path", default=None)
     dense.add_argument("--selection", required=True)
     dense.add_argument("--strength-selection", default=None)
     dense.add_argument("--gate-selection", default=None)
@@ -193,6 +243,7 @@ def main() -> None:
         root,
         source=args.source,
         vector_path=args.vector_path,
+        gate_vector_path=args.gate_vector_path,
         selection_path=Path(args.selection),
         strength_selection_path=args.strength_selection,
         gate_selection_path=args.gate_selection,

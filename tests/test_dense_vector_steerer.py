@@ -152,3 +152,31 @@ def test_gate_threshold_uses_standardized_score_units(tmp_path):
     finally:
         steerer.detach()
     assert torch.allclose(y[0, -1], torch.tensor([1.0, 2.5]), atol=1e-6)
+
+
+def test_dense_diagnostics_report_gate_and_delta(tmp_path):
+    model = DummyModel()
+    path = _bundle(tmp_path)
+    steerer = DenseVectorSteerer(
+        model, torch.device("cpu"), torch.float32,
+        DenseVectorConfig(
+            vector_path=path, vector_key="steer", hookpoint="model.layers.0",
+            strength=0.2, scale_mode="recorded_residual_norm_fraction",
+            apply_to="last_position", steer_generated_tokens_only=False,
+            gate_enabled=True, gate_vector_key="gate", gate_mode="sigmoid",
+            gate_temperature=None,
+        ),
+    )
+    x = torch.tensor([[[0.0, 0.0], [0.0, 2.5]]])
+    steerer.attach()
+    try:
+        _ = model(x)
+    finally:
+        steerer.detach()
+    rows = steerer.diagnostics()
+    assert len(rows) == 1
+    assert rows[0]["gate_raw_score"] == 2.5
+    assert rows[0]["gate_standardized_score"] == 1.0
+    assert 0.73 < rows[0]["gate_weight"] < 0.74
+    assert rows[0]["steering_delta_norm"] > 1.4
+    assert rows[0]["steering_applied"] is True

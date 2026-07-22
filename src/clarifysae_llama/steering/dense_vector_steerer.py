@@ -66,6 +66,9 @@ class DenseVectorSteerer:
         self.handle = None
         self._cached_gate_weights: torch.Tensor | None = None
         self.last_gate_scores: torch.Tensor | None = None
+        self.last_gate_standardized_scores: torch.Tensor | None = None
+        self.last_gate_weights: torch.Tensor | None = None
+        self.last_steering_delta_norms: torch.Tensor | None = None
 
         module_path = resolve_module_path(config.hookpoint, config.module_path)
         self.target_module = get_submodule_by_path(self.model, module_path)
@@ -114,6 +117,9 @@ class DenseVectorSteerer:
     def reset(self) -> None:
         self._cached_gate_weights = None
         self.last_gate_scores = None
+        self.last_gate_standardized_scores = None
+        self.last_gate_weights = None
+        self.last_steering_delta_norms = None
 
     def _selected_position_mask(self, hidden: torch.Tensor) -> torch.Tensor:
         batch_size, seq_len, _ = hidden.shape
@@ -136,7 +142,11 @@ class DenseVectorSteerer:
     def _compute_gate_weights(self, hidden: torch.Tensor) -> torch.Tensor:
         batch_size, _seq_len, d_model = hidden.shape
         if not self.config.gate_enabled:
-            return torch.ones(batch_size, device=hidden.device, dtype=hidden.dtype)
+            weights = torch.ones(
+                batch_size, device=hidden.device, dtype=hidden.dtype
+            )
+            self.last_gate_weights = weights.detach().float().cpu()
+            return weights
 
         # Compute exactly once per reset. Recomputing whenever seq_len > 1 makes
         # no-cache generation silently change the gate after every token.
@@ -153,6 +163,9 @@ class DenseVectorSteerer:
             # units. This matches the sweep configuration and makes thresholds
             # comparable across layers instead of treating +/-1 as raw logits.
             normalized_scores = scores / max(float(self.gate_temperature), 1e-6)
+            self.last_gate_standardized_scores = (
+                normalized_scores.detach().float().cpu()
+            )
             centered = normalized_scores - float(self.config.gate_threshold)
             mode = self.config.gate_mode.strip().lower().replace("-", "_")
             if mode == "hard":
@@ -164,6 +177,7 @@ class DenseVectorSteerer:
             else:
                 raise ValueError(f"Unsupported gate_mode: {self.config.gate_mode}")
             self._cached_gate_weights = weights.detach()
+            self.last_gate_weights = weights.detach().float().cpu()
 
         cached = self._cached_gate_weights.to(device=hidden.device, dtype=hidden.dtype)
         if cached.shape[0] == batch_size:
@@ -233,10 +247,73 @@ class DenseVectorSteerer:
             norms = delta.norm(dim=-1, keepdim=True).clamp_min(1e-8)
             delta = delta * torch.clamp(cap / norms, max=1.0)
 
+        delta_norms = torch.zeros(
+            hidden.shape[0], device=hidden.device, dtype=torch.float32
+        )
+        for row_idx in range(hidden.shape[0]):
+            row_mask = batch_idx == row_idx
+            if bool(row_mask.any()):
+                delta_norms[row_idx] = delta[row_mask].float().norm(
+                    dim=-1
+                ).max()
+        current = delta_norms.detach().cpu()
+        if self.last_steering_delta_norms is None:
+            self.last_steering_delta_norms = current
+        elif self.last_steering_delta_norms.shape == current.shape:
+            self.last_steering_delta_norms = torch.maximum(
+                self.last_steering_delta_norms, current
+            )
+
         updated[batch_idx, seq_idx, :] = base + delta
         if isinstance(output, tuple):
             return (updated,) + output[1:]
         return updated
+
+    def diagnostics(self) -> list[dict[str, Any]]:
+        candidates = [
+            self.last_gate_scores,
+            self.last_gate_standardized_scores,
+            self.last_gate_weights,
+            self.last_steering_delta_norms,
+        ]
+        size = max(
+            (int(value.numel()) for value in candidates if value is not None),
+            default=0,
+        )
+        rows: list[dict[str, Any]] = []
+        for index in range(size):
+            raw = (
+                float(self.last_gate_scores[index])
+                if self.last_gate_scores is not None
+                and index < self.last_gate_scores.numel()
+                else None
+            )
+            standardized = (
+                float(self.last_gate_standardized_scores[index])
+                if self.last_gate_standardized_scores is not None
+                and index < self.last_gate_standardized_scores.numel()
+                else None
+            )
+            weight = (
+                float(self.last_gate_weights[index])
+                if self.last_gate_weights is not None
+                and index < self.last_gate_weights.numel()
+                else (1.0 if not self.config.gate_enabled else None)
+            )
+            delta_norm = (
+                float(self.last_steering_delta_norms[index])
+                if self.last_steering_delta_norms is not None
+                and index < self.last_steering_delta_norms.numel()
+                else 0.0
+            )
+            rows.append({
+                "gate_raw_score": raw,
+                "gate_standardized_score": standardized,
+                "gate_weight": weight,
+                "steering_delta_norm": delta_norm,
+                "steering_applied": bool(delta_norm > 1e-12),
+            })
+        return rows
 
 
 class MultiLayerDenseVectorSteerer:
@@ -272,3 +349,22 @@ class MultiLayerDenseVectorSteerer:
     def reset(self) -> None:
         for steerer in self.steerers:
             steerer.reset()
+
+    def diagnostics(self) -> list[dict[str, Any]]:
+        child_rows = [steerer.diagnostics() for steerer in self.steerers]
+        size = max((len(rows) for rows in child_rows), default=0)
+        merged: list[dict[str, Any]] = []
+        for index in range(size):
+            available = [rows[index] for rows in child_rows if index < len(rows)]
+            merged.append({
+                "gate_raw_score": available[0].get("gate_raw_score") if available else None,
+                "gate_standardized_score": available[0].get("gate_standardized_score") if available else None,
+                "gate_weight": available[0].get("gate_weight") if available else None,
+                "steering_delta_norm": float(sum(
+                    float(row.get("steering_delta_norm") or 0.0) for row in available
+                )),
+                "steering_applied": any(
+                    bool(row.get("steering_applied")) for row in available
+                ),
+            })
+        return merged
